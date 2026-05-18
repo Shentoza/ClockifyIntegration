@@ -203,7 +203,8 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             self._workspace_id, user_id, start_str, end_str
         )
         time_off_days = calculate_time_off_days(
-            time_off_requests, working_days, holiday_dates
+            time_off_requests, working_days, holiday_dates,
+            period_start=start_date, period_end=today,
         )
 
         # 6. Compute hours

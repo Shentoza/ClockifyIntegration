@@ -127,3 +127,26 @@ def test_calculate_time_off_days_overlaps_holiday():
     assert calculate_time_off_days(
         [_request(S_MON, S_WED)], WORKDAYS_MON_FRI, holiday  # Mon–Wed, Wed = holiday
     ) == 2.0
+
+
+def test_calculate_time_off_days_clamps_to_period_start():
+    # SPEC: A leave request that starts BEFORE the tracking start date must only
+    # count working days that fall within the tracking period.  Clockify returns
+    # requests that *overlap* the query window, not only those that start inside
+    # it, so without clamping the same leave days would be counted twice —
+    # once outside the period (where no target was accrued) and once inside.
+    # This was the root cause of the 128 h vs 160 h discrepancy:
+    # leave ran 2026-03-25 – 2026-04-09 but tracking started 2026-04-01,
+    # so only the Apr 1–9 portion must be deducted.
+    #
+    # Request spans the full week Mon–Sun but tracking only starts Wed.
+    period_start = WEEK_WED  # tracking starts Wednesday
+    period_end = WEEK_SUN    # end of the same week
+    assert calculate_time_off_days(
+        [_request(S_MON, S_SUN)],   # leave starts Monday (before tracking)
+        WORKDAYS_MON_FRI,
+        set(),
+        period_start=period_start,
+        period_end=period_end,
+    ) == 3.0  # only Wed, Thu, Fri count (Mon–Tue precede tracking start)
+

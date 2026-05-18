@@ -83,12 +83,19 @@ def calculate_time_off_days(
     requests: list[dict[str, Any]],
     working_days: list[str],
     holiday_dates: set[date],
+    period_start: date | None = None,
+    period_end: date | None = None,
 ) -> float:
     """Return total working days consumed by APPROVED time-off requests.
 
     For each request the date range is walked day by day, counting only
     days that match *working_days* and are not in *holiday_dates*.
     Half-day requests are counted as 0.5 days.
+
+    *period_start* and *period_end* clamp each request to the tracking
+    period.  This prevents requests that overlap the period boundary
+    (e.g. leave starting before the tracking start date) from counting
+    days that should not reduce the target.
     """
     work_day_numbers = {WEEKDAY_MAP[d] for d in working_days if d in WEEKDAY_MAP}
     total = 0.0
@@ -102,6 +109,14 @@ def calculate_time_off_days(
         end_str = period.get("end")
         end = date.fromisoformat(end_str[:10]) if end_str else start
         is_half_day = time_off_period.get("halfDay", False)
+
+        # Clamp to the tracking period so pre-period days are not counted
+        if period_start:
+            start = max(start, period_start)
+        if period_end:
+            end = min(end, period_end)
+        if start > end:
+            continue
 
         days = sum(
             1
