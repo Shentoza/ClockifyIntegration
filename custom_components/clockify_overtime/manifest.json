@@ -1,0 +1,16 @@
+{
+    "domain": "clockify_overtime",
+    "name": "Clockify Overtime Tracker",
+    "version": "0.1.0",
+    "documentation": "https://github.com/Shentoza/ClockifyIntegration",
+    "issue_tracker": "https://github.com/Shentoza/ClockifyIntegration/issues",
+    "codeowners": [
+        "@Shentoza"
+    ],
+    "requirements": [],
+    "dependencies": [],
+    "config_flow": true,
+    "integration_type": "service",
+    "iot_class": "cloud_polling",
+    "single_config_entry": true
+}

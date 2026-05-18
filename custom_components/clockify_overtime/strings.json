@@ -1,0 +1,55 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Clockify Overtime Tracker",
+                "description": "Enter your Clockify API key. You can find it at {settings_url}",
+                "data": {
+                    "api_key": "API Key"
+                }
+            },
+            "tracking": {
+                "title": "Tracking Settings",
+                "description": "Configuring overtime tracking for {user}",
+                "data": {
+                    "tracking_mode": "Tracking mode",
+                    "hours_per_day": "Target hours per working day",
+                    "start_date": "Tracking start date",
+                    "correction_hours": "Correction / payout offset (hours)",
+                    "scan_interval": "Update interval (minutes)",
+                    "excluded_project_ids": "Projects to exclude from billable hours"
+                },
+                "data_description": {
+                    "correction_hours": "Enter positive hours to subtract (e.g. overtime that has been paid out). Use negative values to add extra hours.",
+                    "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable."
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Could not connect to Clockify. Please check your API key and network connection.",
+            "unknown": "An unexpected error occurred. Please check the logs."
+        },
+        "abort": {
+            "already_configured": "Clockify Overtime is already configured for this account."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Update Tracking Settings",
+                "data": {
+                    "tracking_mode": "Tracking mode",
+                    "hours_per_day": "Target hours per working day",
+                    "start_date": "Tracking start date",
+                    "correction_hours": "Correction / payout offset (hours)",
+                    "scan_interval": "Update interval (minutes)",
+                    "excluded_project_ids": "Projects to exclude from billable hours"
+                },
+                "data_description": {
+                    "correction_hours": "Enter positive hours to subtract (e.g. overtime that has been paid out). Use negative values to add extra hours.",
+                    "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable."
+                }
+            }
+        }
+    }
+}

@@ -1,0 +1,55 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Clockify Overtime Tracker",
+                "description": "Enter your Clockify API key. You can find it at {settings_url}",
+                "data": {
+                    "api_key": "API Key"
+                }
+            },
+            "tracking": {
+                "title": "Tracking-Einstellungen",
+                "description": "Überstunden-Tracking für {user} konfigurieren",
+                "data": {
+                    "tracking_mode": "Tracking-Modus",
+                    "hours_per_day": "Soll-Stunden pro Arbeitstag",
+                    "start_date": "Tracking-Startdatum",
+                    "correction_hours": "Korrektur / Auszahlung (Stunden)",
+                    "scan_interval": "Aktualisierungsintervall (Minuten)",
+                    "excluded_project_ids": "Projekte von Projektstunden ausschließen"
+                },
+                "data_description": {
+                    "correction_hours": "Positive Stunden werden abgezogen (z.B. ausbezahlte Überstunden). Negative Stunden werden addiert.",
+                    "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind."
+                }
+            }
+        },
+        "error": {
+            "cannot_connect": "Verbindung zu Clockify fehlgeschlagen. Bitte API-Key und Netzwerkverbindung prüfen.",
+            "unknown": "Unerwarteter Fehler. Bitte die Logs prüfen."
+        },
+        "abort": {
+            "already_configured": "Clockify Overtime ist für diesen Account bereits eingerichtet."
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Tracking-Einstellungen anpassen",
+                "data": {
+                    "tracking_mode": "Tracking-Modus",
+                    "hours_per_day": "Soll-Stunden pro Arbeitstag",
+                    "start_date": "Tracking-Startdatum",
+                    "correction_hours": "Korrektur / Auszahlung (Stunden)",
+                    "scan_interval": "Aktualisierungsintervall (Minuten)",
+                    "excluded_project_ids": "Projekte von Projektstunden ausschließen"
+                },
+                "data_description": {
+                    "correction_hours": "Positive Stunden werden abgezogen (z.B. ausbezahlte Überstunden). Negative Stunden werden addiert.",
+                    "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind."
+                }
+            }
+        }
+    }
+}
