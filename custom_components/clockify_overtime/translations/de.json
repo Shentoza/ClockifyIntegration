@@ -3,9 +3,9 @@
         "step": {
             "user": {
                 "title": "Clockify Overtime Tracker",
-                "description": "Enter your Clockify API key. You can find it at {settings_url}",
+                "description": "Gib deinen Clockify API-Key ein. Du findest ihn unter {settings_url}",
                 "data": {
-                    "api_key": "API Key"
+                    "api_key": "API-Key"
                 }
             },
             "tracking": {
@@ -13,14 +13,17 @@
                 "description": "Überstunden-Tracking für {user} konfigurieren",
                 "data": {
                     "tracking_mode": "Tracking-Modus",
-                    "hours_per_day": "Soll-Stunden pro Arbeitstag",
+                    "working_days": "Arbeitstage",
+                    "hours_per_week": "Soll-Stunden pro Woche",
                     "start_date": "Tracking-Startdatum",
                     "correction_hours": "Korrektur / Auszahlung (Stunden)",
                     "scan_interval": "Aktualisierungsintervall (Minuten)",
                     "excluded_project_ids": "Projekte von Projektstunden ausschließen"
                 },
                 "data_description": {
-                    "correction_hours": "Positive Stunden werden abgezogen (z.B. ausbezahlte Überstunden). Negative Stunden werden addiert.",
+                    "working_days": "Wähle die Wochentage aus, an denen du vertraglich arbeiten musst.",
+                    "hours_per_week": "Deine vertraglich vereinbarte Wochenarbeitszeit.",
+                    "correction_hours": "Positive Stunden werden zum Saldo addiert (z.B. angesparte Überstunden). Negative Stunden werden abgezogen (z.B. bereits ausbezahlte Überstunden).",
                     "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind."
                 }
             }
@@ -39,14 +42,17 @@
                 "title": "Tracking-Einstellungen anpassen",
                 "data": {
                     "tracking_mode": "Tracking-Modus",
-                    "hours_per_day": "Soll-Stunden pro Arbeitstag",
+                    "working_days": "Arbeitstage",
+                    "hours_per_week": "Soll-Stunden pro Woche",
                     "start_date": "Tracking-Startdatum",
                     "correction_hours": "Korrektur / Auszahlung (Stunden)",
                     "scan_interval": "Aktualisierungsintervall (Minuten)",
                     "excluded_project_ids": "Projekte von Projektstunden ausschließen"
                 },
                 "data_description": {
-                    "correction_hours": "Positive Stunden werden abgezogen (z.B. ausbezahlte Überstunden). Negative Stunden werden addiert.",
+                    "working_days": "Wähle die Wochentage aus, an denen du vertraglich arbeiten musst.",
+                    "hours_per_week": "Deine vertraglich vereinbarte Wochenarbeitszeit.",
+                    "correction_hours": "Positive Stunden werden zum Saldo addiert (z.B. angesparte Überstunden). Negative Stunden werden abgezogen (z.B. bereits ausbezahlte Überstunden).",
                     "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind."
                 }
             }

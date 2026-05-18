@@ -5,12 +5,13 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import ClockifyOvertimeCoordinator
-from .const import DOMAIN, TRACKING_MODE_BILLABLE
+from .const import CONF_TRACKING_MODE, DOMAIN, TRACKING_MODE_BILLABLE
 
 
 async def async_setup_entry(
@@ -30,7 +31,7 @@ async def async_setup_entry(
     ]
 
     # Add the billable-hours sensor only when the user selected billable mode
-    tracking_mode = entry.data.get(CONF_TRACKING_MODE_KEY := "tracking_mode", "all")
+    tracking_mode = entry.data.get(CONF_TRACKING_MODE, entry.options.get(CONF_TRACKING_MODE, "all"))
     if tracking_mode == TRACKING_MODE_BILLABLE:
         entities.append(ClockifyBillableHoursSensor(coordinator, entry, user_name))
 
@@ -117,6 +118,7 @@ class ClockifyTargetHoursSensor(_ClockifyBaseSensor):
     """Expected (target) hours since the tracking start date."""
 
     _attr_icon = "mdi:calendar-clock-outline"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
 
     def __init__(self, coordinator, entry, user_name) -> None:
         super().__init__(coordinator, entry, user_name, "target_hours", "Target Hours")

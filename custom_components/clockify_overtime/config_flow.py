@@ -28,14 +28,16 @@ from .const import (
     CONF_API_KEY,
     CONF_CORRECTION_HOURS,
     CONF_EXCLUDED_PROJECT_IDS,
-    CONF_HOURS_PER_DAY,
+    CONF_HOURS_PER_WEEK,
     CONF_SCAN_INTERVAL,
     CONF_START_DATE,
     CONF_TRACKING_MODE,
+    CONF_WORKING_DAYS,
     DEFAULT_CORRECTION_HOURS,
-    DEFAULT_HOURS_PER_DAY,
+    DEFAULT_HOURS_PER_WEEK,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TRACKING_MODE,
+    DEFAULT_WORKING_DAYS,
     DOMAIN,
     TRACKING_MODE_ALL,
     TRACKING_MODE_BILLABLE,
@@ -44,8 +46,8 @@ from .const import (
 _LOGGER = logging.getLogger(__name__)
 
 _TRACKING_MODE_OPTIONS = [
-    {"value": TRACKING_MODE_ALL, "label": "All booked hours"},
-    {"value": TRACKING_MODE_BILLABLE, "label": "Billable / project hours only"},
+    {"value": TRACKING_MODE_ALL, "label": "Alle gebuchten Stunden"},
+    {"value": TRACKING_MODE_BILLABLE, "label": "Nur verrechenbare Projektstunden"},
 ]
 
 
@@ -132,7 +134,8 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_API_KEY: self._api_key,
                     CONF_TRACKING_MODE: user_input[CONF_TRACKING_MODE],
                     CONF_EXCLUDED_PROJECT_IDS: excluded,
-                    CONF_HOURS_PER_DAY: float(user_input[CONF_HOURS_PER_DAY]),
+                    CONF_HOURS_PER_WEEK: float(user_input[CONF_HOURS_PER_WEEK]),
+                    CONF_WORKING_DAYS: user_input.get(CONF_WORKING_DAYS, DEFAULT_WORKING_DAYS),
                     CONF_START_DATE: user_input[CONF_START_DATE],
                     CONF_CORRECTION_HOURS: float(
                         user_input.get(CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
@@ -149,7 +152,8 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 projects=self._projects,
                 defaults={
                     CONF_TRACKING_MODE: DEFAULT_TRACKING_MODE,
-                    CONF_HOURS_PER_DAY: DEFAULT_HOURS_PER_DAY,
+                    CONF_HOURS_PER_WEEK: DEFAULT_HOURS_PER_WEEK,
+                    CONF_WORKING_DAYS: list(DEFAULT_WORKING_DAYS),
                     CONF_START_DATE: date.today().isoformat(),
                     CONF_CORRECTION_HOURS: DEFAULT_CORRECTION_HOURS,
                     CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
@@ -206,9 +210,10 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             excluded = _normalise_excluded(user_input.get(CONF_EXCLUDED_PROJECT_IDS, []))
             user_input[CONF_EXCLUDED_PROJECT_IDS] = excluded
-            user_input[CONF_HOURS_PER_DAY] = float(user_input[CONF_HOURS_PER_DAY])
+            user_input[CONF_HOURS_PER_WEEK] = float(user_input[CONF_HOURS_PER_WEEK])
             user_input[CONF_CORRECTION_HOURS] = float(user_input[CONF_CORRECTION_HOURS])
             user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
+            user_input[CONF_WORKING_DAYS] = user_input.get(CONF_WORKING_DAYS, DEFAULT_WORKING_DAYS)
             return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
@@ -217,7 +222,10 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
                 projects=self._projects,
                 defaults={
                     CONF_TRACKING_MODE: current.get(CONF_TRACKING_MODE, DEFAULT_TRACKING_MODE),
-                    CONF_HOURS_PER_DAY: float(current.get(CONF_HOURS_PER_DAY, DEFAULT_HOURS_PER_DAY)),
+                    CONF_HOURS_PER_WEEK: float(
+                        current.get(CONF_HOURS_PER_WEEK, DEFAULT_HOURS_PER_WEEK)
+                    ),
+                    CONF_WORKING_DAYS: current.get(CONF_WORKING_DAYS, list(DEFAULT_WORKING_DAYS)),
                     CONF_START_DATE: current.get(CONF_START_DATE, date.today().isoformat()),
                     CONF_CORRECTION_HOURS: float(
                         current.get(CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
@@ -240,6 +248,16 @@ def _build_tracking_schema(
     defaults: dict[str, Any],
 ) -> vol.Schema:
     """Build the voluptuous schema for step 2 / options, with optional project selector."""
+    _WEEKDAY_OPTIONS = [
+        {"value": "MONDAY",    "label": "Montag"},
+        {"value": "TUESDAY",   "label": "Dienstag"},
+        {"value": "WEDNESDAY", "label": "Mittwoch"},
+        {"value": "THURSDAY",  "label": "Donnerstag"},
+        {"value": "FRIDAY",    "label": "Freitag"},
+        {"value": "SATURDAY",  "label": "Samstag"},
+        {"value": "SUNDAY",    "label": "Sonntag"},
+    ]
+
     schema: dict[Any, Any] = {
         vol.Required(
             CONF_TRACKING_MODE, default=defaults[CONF_TRACKING_MODE]
@@ -250,9 +268,18 @@ def _build_tracking_schema(
             )
         ),
         vol.Required(
-            CONF_HOURS_PER_DAY, default=defaults[CONF_HOURS_PER_DAY]
+            CONF_WORKING_DAYS, default=defaults.get(CONF_WORKING_DAYS, list(DEFAULT_WORKING_DAYS))
+        ): SelectSelector(
+            SelectSelectorConfig(
+                options=_WEEKDAY_OPTIONS,
+                multiple=True,
+                mode=SelectSelectorMode.LIST,
+            )
+        ),
+        vol.Required(
+            CONF_HOURS_PER_WEEK, default=defaults.get(CONF_HOURS_PER_WEEK, DEFAULT_HOURS_PER_WEEK)
         ): NumberSelector(
-            NumberSelectorConfig(min=0.5, max=24.0, step=0.5, mode=NumberSelectorMode.BOX)
+            NumberSelectorConfig(min=1.0, max=80.0, step=0.5, mode=NumberSelectorMode.BOX)
         ),
         vol.Required(
             CONF_START_DATE, default=defaults[CONF_START_DATE]

@@ -15,12 +15,13 @@ from .const import (
     CONF_API_KEY,
     CONF_CORRECTION_HOURS,
     CONF_EXCLUDED_PROJECT_IDS,
-    CONF_HOURS_PER_DAY,
+    CONF_HOURS_PER_WEEK,
     CONF_SCAN_INTERVAL,
     CONF_START_DATE,
     CONF_TRACKING_MODE,
+    CONF_WORKING_DAYS,
     DEFAULT_CORRECTION_HOURS,
-    DEFAULT_HOURS_PER_DAY,
+    DEFAULT_HOURS_PER_WEEK,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TRACKING_MODE,
     DEFAULT_WORKING_DAYS,
@@ -28,6 +29,12 @@ from .const import (
     PLATFORMS,
     TRACKING_MODE_BILLABLE,
     WEEKDAY_MAP,
+)
+from .calculations import (
+    calculate_target_hours,
+    calculate_time_off_days,
+    entry_duration_seconds,
+    extract_holiday_dates,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -63,6 +70,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     hass.data[DOMAIN][entry.entry_id] = {
         "coordinator": coordinator,
         "user_info": user_info,
+        "_structural_snapshot": _structural_snapshot(entry),
     }
 
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -73,7 +81,27 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
-    """Reload the integration whenever the options flow saves new values."""
+    """Reload for structural changes; refresh only for correction_hours changes.
+
+    Structural settings (scan interval, tracking mode, working days, etc.) require
+    the integration to be fully reloaded.  A correction_hours-only change can be
+    satisfied by a coordinator refresh, which avoids a disruptive restart.
+    """
+    stored = hass.data.get(DOMAIN, {}).get(entry.entry_id, {})
+    prev_snapshot = stored.get("_structural_snapshot", {})
+    new_snapshot = _structural_snapshot(entry)
+
+    # Update snapshot so it reflects current state for the next change
+    if DOMAIN in hass.data and entry.entry_id in hass.data[DOMAIN]:
+        hass.data[DOMAIN][entry.entry_id]["_structural_snapshot"] = new_snapshot
+
+    if prev_snapshot == new_snapshot:
+        # Only non-structural settings changed (e.g. correction_hours via number entity)
+        coordinator = stored.get("coordinator")
+        if coordinator:
+            await coordinator.async_request_refresh()
+        return
+
     await hass.config_entries.async_reload(entry.entry_id)
 
 
@@ -139,12 +167,18 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
 
         # 2. Read config (options override entry.data)
         start_date_str: str = _opt(self.entry, CONF_START_DATE, "")
-        hours_per_day: float = float(_opt(self.entry, CONF_HOURS_PER_DAY, DEFAULT_HOURS_PER_DAY))
         tracking_mode: str = _opt(self.entry, CONF_TRACKING_MODE, DEFAULT_TRACKING_MODE)
         excluded_ids: list[str] = _opt(self.entry, CONF_EXCLUDED_PROJECT_IDS, [])
         correction_hours: float = float(
             _opt(self.entry, CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
         )
+        hours_per_week: float = float(
+            _opt(self.entry, CONF_HOURS_PER_WEEK, DEFAULT_HOURS_PER_WEEK)
+        )
+        # working_days: prefer config value, fall back to workspace setting
+        working_days: list[str] = list(
+            _opt(self.entry, CONF_WORKING_DAYS, self._workspace_working_days)
+        ) or list(DEFAULT_WORKING_DAYS)
 
         # 3. Build date range (start_date → now UTC)
         start_date = date.fromisoformat(start_date_str)
@@ -162,14 +196,14 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         holidays = await self.api.get_holidays_in_period(
             self._workspace_id, user_id, start_str, end_str
         )
-        holiday_dates = _extract_holiday_dates(holidays)
+        holiday_dates = extract_holiday_dates(holidays)
 
         # 5b. Fetch approved time-off requests (optional, free plan returns [])
         time_off_requests = await self.api.get_time_off_requests(
             self._workspace_id, user_id, start_str, end_str
         )
-        time_off_days = _calculate_time_off_days(
-            time_off_requests, self._workspace_working_days, holiday_dates
+        time_off_days = calculate_time_off_days(
+            time_off_requests, working_days, holiday_dates
         )
 
         # 6. Compute hours
@@ -180,7 +214,7 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             # Skip pause/break entries
             if entry.get("type") == "BREAK":
                 continue
-            duration = _entry_duration_seconds(entry)
+            duration = entry_duration_seconds(entry)
             actual_seconds += duration
 
             # Billable = flagged as billable AND not in the exclusion list
@@ -193,22 +227,26 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         billable_hours = round(billable_seconds / 3600, 2)
 
         # 7. Compute target (Soll-Stunden) minus time-off days
+        num_working_days_per_week = len(
+            [d for d in working_days if d in WEEKDAY_MAP]
+        ) or 5
+        hours_per_day_avg = hours_per_week / num_working_days_per_week
         target_hours = round(
-            _calculate_target_hours(
+            calculate_target_hours(
                 start_date,
                 today,
-                hours_per_day,
-                self._workspace_working_days,
+                hours_per_week,
+                working_days,
                 holiday_dates,
             )
-            - time_off_days * hours_per_day,
+            - time_off_days * hours_per_day_avg,
             2,
         )
 
         # 8. Compute balance
         # Base = billable hours when in billable mode, otherwise all actual hours
         base_hours = billable_hours if tracking_mode == TRACKING_MODE_BILLABLE else actual_hours
-        balance_hours = round(base_hours - target_hours - correction_hours, 2)
+        balance_hours = round(base_hours - target_hours + correction_hours, 2)
 
         return {
             "total_hours": actual_hours,
@@ -233,95 +271,18 @@ def _opt(entry: ConfigEntry, key: str, default: Any) -> Any:
     return entry.options.get(key, entry.data.get(key, default))
 
 
-def _entry_duration_seconds(entry: dict[str, Any]) -> float:
-    """Compute the duration of a time entry in seconds.
+def _structural_snapshot(entry: ConfigEntry) -> dict:
+    """Return a snapshot of settings that require a full reload when changed.
 
-    For running timers (no *end*), *now* is used as the end time.
+    Settings that only affect the computed result (like correction_hours) are
+    intentionally excluded so that a number-entity update avoids a reload.
     """
-    interval = entry.get("timeInterval", {})
-    start_str = interval.get("start")
-    if not start_str:
-        return 0.0
-    start = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
-    end_str = interval.get("end")
-    end = (
-        datetime.fromisoformat(end_str.replace("Z", "+00:00"))
-        if end_str
-        else datetime.now(timezone.utc)
-    )
-    return max(0.0, (end - start).total_seconds())
-
-
-def _calculate_target_hours(
-    start: date,
-    end: date,
-    hours_per_day: float,
-    working_days: list[str],
-    holiday_dates: set[date],
-) -> float:
-    """Count working days between *start* and *end* (inclusive) and multiply by *hours_per_day*.
-
-    *working_days* is a list of Clockify day-name strings (e.g. ``["MONDAY", "FRIDAY"]``).
-    Days that fall on a holiday are not counted.
-    """
-    work_day_numbers = {WEEKDAY_MAP[d] for d in working_days if d in WEEKDAY_MAP}
-    total_days = 0
-    current = start
-    while current <= end:
-        if current.weekday() in work_day_numbers and current not in holiday_dates:
-            total_days += 1
-        current += timedelta(days=1)
-    return round(total_days * hours_per_day, 2)
-
-
-def _extract_holiday_dates(holidays: list[dict[str, Any]]) -> set[date]:
-    """Flatten holiday date-period objects into a set of individual dates."""
-    dates: set[date] = set()
-    for h in holidays:
-        period = h.get("datePeriod", {})
-        start_str = period.get("start")
-        if not start_str:
-            continue
-        start = date.fromisoformat(start_str[:10])
-        end_str = period.get("end")
-        end = date.fromisoformat(end_str[:10]) if end_str else start
-        current = start
-        while current <= end:
-            dates.add(current)
-            current += timedelta(days=1)
-    return dates
-
-
-def _calculate_time_off_days(
-    requests: list[dict[str, Any]],
-    working_days: list[str],
-    holiday_dates: set[date],
-) -> float:
-    """Return total working days consumed by APPROVED time-off requests.
-
-    For each request the date range is walked day by day, counting only
-    days that match the workspace working-day pattern and are not holidays.
-    Half-day requests are counted as 0.5 days.
-    """
-    work_day_numbers = {WEEKDAY_MAP[d] for d in working_days if d in WEEKDAY_MAP}
-    total = 0.0
-    for req in requests:
-        time_off_period = req.get("timeOffPeriod", {})
-        period = time_off_period.get("period", {})
-        start_str = period.get("start")
-        if not start_str:
-            continue
-        start = date.fromisoformat(start_str[:10])
-        end_str = period.get("end")
-        end = date.fromisoformat(end_str[:10]) if end_str else start
-        is_half_day = time_off_period.get("halfDay", False)
-
-        days = 0
-        current = start
-        while current <= end:
-            if current.weekday() in work_day_numbers and current not in holiday_dates:
-                days += 1
-            current += timedelta(days=1)
-
-        total += days * 0.5 if is_half_day else days
-    return total
+    keys = {
+        CONF_SCAN_INTERVAL,
+        CONF_TRACKING_MODE,
+        CONF_START_DATE,
+        CONF_WORKING_DAYS,
+        CONF_HOURS_PER_WEEK,
+        CONF_EXCLUDED_PROJECT_IDS,
+    }
+    return {k: _opt(entry, k, None) for k in keys}

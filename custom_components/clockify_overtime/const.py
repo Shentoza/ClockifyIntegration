@@ -8,7 +8,8 @@ API_BASE_URL = "https://api.clockify.me/api/v1"
 CONF_API_KEY = "api_key"
 CONF_TRACKING_MODE = "tracking_mode"
 CONF_EXCLUDED_PROJECT_IDS = "excluded_project_ids"
-CONF_HOURS_PER_DAY = "hours_per_day"
+CONF_HOURS_PER_WEEK = "hours_per_week"
+CONF_WORKING_DAYS = "working_days"
 CONF_START_DATE = "start_date"
 CONF_CORRECTION_HOURS = "correction_hours"
 CONF_SCAN_INTERVAL = "scan_interval"
@@ -18,12 +19,12 @@ TRACKING_MODE_ALL = "all"
 TRACKING_MODE_BILLABLE = "billable"
 
 # Defaults
-DEFAULT_HOURS_PER_DAY = 8.0
+DEFAULT_HOURS_PER_WEEK = 40.0
 DEFAULT_SCAN_INTERVAL = 30  # minutes
 DEFAULT_TRACKING_MODE = TRACKING_MODE_ALL
 DEFAULT_CORRECTION_HOURS = 0.0
 
-PLATFORMS = ["sensor"]
+PLATFORMS = ["sensor", "number"]
 
 # Weekday name → Python weekday number (Monday=0)
 WEEKDAY_MAP = {
