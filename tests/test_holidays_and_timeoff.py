@@ -17,6 +17,20 @@ from custom_components.clockify_overtime.calculations import (
 
 WORKDAYS_MON_FRI = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
 
+# Calendar week 2025-01-06 (Mon) – 2025-01-12 (Sun) — used throughout these tests
+WEEK_MON = date(2025, 1, 6)   # Monday
+WEEK_TUE = date(2025, 1, 7)   # Tuesday
+WEEK_WED = date(2025, 1, 8)   # Wednesday
+WEEK_SAT = date(2025, 1, 11)  # Saturday
+WEEK_SUN = date(2025, 1, 12)  # Sunday
+
+# Same dates as ISO strings (for building Clockify API fixture objects)
+S_MON = WEEK_MON.isoformat()  # "2025-01-06"
+S_TUE = WEEK_TUE.isoformat()  # "2025-01-07"
+S_WED = WEEK_WED.isoformat()  # "2025-01-08"
+S_SAT = WEEK_SAT.isoformat()  # "2025-01-11"
+S_SUN = WEEK_SUN.isoformat()  # "2025-01-12"
+
 
 # ---------------------------------------------------------------------------
 # extract_holiday_dates
@@ -32,10 +46,10 @@ def test_extract_holiday_dates_empty():
 
 def test_extract_holiday_dates_single_day():
     # SPEC: Clockify always uses a date range in the API response, even for
-    # single-day holidays (start == end).  The result must be a set with
+    # single-day holidays (startDate == endDate).  The result must be a set with
     # exactly one date so the day-by-day target lookup can find it.
-    holidays = [{"datePeriod": {"start": "2025-01-06", "end": "2025-01-06"}}]
-    assert extract_holiday_dates(holidays) == {date(2025, 1, 6)}
+    holidays = [{"datePeriod": {"startDate": S_MON, "endDate": S_MON}}]
+    assert extract_holiday_dates(holidays) == {WEEK_MON}
 
 
 def test_extract_holiday_dates_range():
@@ -43,15 +57,15 @@ def test_extract_holiday_dates_range():
     # range in Clockify but must be expanded into individual dates.  The target
     # calculation checks each date individually, so every date in the range
     # must appear in the returned set.
-    holidays = [{"datePeriod": {"start": "2025-01-06", "end": "2025-01-08"}}]
+    holidays = [{"datePeriod": {"startDate": S_MON, "endDate": S_WED}}]  # Mon–Wed
     result = extract_holiday_dates(holidays)
-    assert result == {date(2025, 1, 6), date(2025, 1, 7), date(2025, 1, 8)}
+    assert result == {WEEK_MON, WEEK_TUE, WEEK_WED}
 
 
 def test_extract_holiday_dates_missing_start():
     # SPEC: Malformed or partially populated API responses must not crash the
-    # integration.  An entry without a 'start' date is silently skipped.
-    holidays = [{"datePeriod": {"end": "2025-01-06"}}]
+    # integration.  An entry without a 'startDate' key is silently skipped.
+    holidays = [{"datePeriod": {"endDate": S_MON}}]
     assert extract_holiday_dates(holidays) == set()
 
 
@@ -81,7 +95,7 @@ def test_calculate_time_off_days_full_day_workday():
     # the target by exactly 1.0 day.  The overtime balance must not go negative
     # just because the user took an approved vacation day.
     assert calculate_time_off_days(
-        [_request("2025-01-06", "2025-01-06")], WORKDAYS_MON_FRI, set()
+        [_request(S_MON, S_MON)], WORKDAYS_MON_FRI, set()  # single Monday
     ) == 1.0
 
 
@@ -90,7 +104,7 @@ def test_calculate_time_off_days_half_day():
     # the target by 0.5, not 1.0 — so the other half of the day still counts
     # toward the expected hours.
     assert calculate_time_off_days(
-        [_request("2025-01-06", "2025-01-06", half_day=True)], WORKDAYS_MON_FRI, set()
+        [_request(S_MON, S_MON, half_day=True)], WORKDAYS_MON_FRI, set()  # Monday, half
     ) == 0.5
 
 
@@ -99,7 +113,7 @@ def test_calculate_time_off_days_weekend_only():
     # Saturday and Sunday are already outside the contracted working days,
     # so they contribute 0 to both actual and target hours.
     assert calculate_time_off_days(
-        [_request("2025-01-11", "2025-01-12")], WORKDAYS_MON_FRI, set()
+        [_request(S_SAT, S_SUN)], WORKDAYS_MON_FRI, set()  # Sat–Sun only
     ) == 0.0
 
 
@@ -109,7 +123,7 @@ def test_calculate_time_off_days_overlaps_holiday():
     # target by extract_holiday_dates.  Counting it again would double-deduct
     # and artificially inflate the overtime balance.
     # Mon–Wed leave, but Wed (2025-01-08) is also a holiday → only 2 days.
-    holiday = {date(2025, 1, 8)}
+    holiday = {WEEK_WED}
     assert calculate_time_off_days(
-        [_request("2025-01-06", "2025-01-08")], WORKDAYS_MON_FRI, holiday
+        [_request(S_MON, S_WED)], WORKDAYS_MON_FRI, holiday  # Mon–Wed, Wed = holiday
     ) == 2.0

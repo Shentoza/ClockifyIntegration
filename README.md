@@ -46,7 +46,9 @@ This integration connects to the Clockify time-tracking API and computes an over
 | Projects to exclude | (none) | Projects excluded from the billable hours count |
 | Correction / payout offset | 0 h | Manual balance adjustment (see note below) |
 
-> **Note — changing Working Days or Target Hours per Week mid-period:** These settings apply uniformly across the entire tracking period. If you reduce your contracted hours or change your working-day schedule partway through the year, the recalculated target will jump and your balance will shift accordingly. Use the **Correction / payout offset** number entity to compensate: enter the hours by which the old calculation differed from reality.
+> **Note — changing Working Days or Target Hours per Week mid-period:** These settings apply uniformly across the entire tracking period. If you reduce your contracted hours or change your working-day schedule partway through the year, the recalculated target will jump and your balance will shift accordingly. Two options to handle this:
+> - **Reset the tracking start date** to the date of the change. The integration then only looks at data from that point forward and the new settings are correct from day one. Any overtime accumulated before the change is lost from the calculation — carry it over manually via the **Correction / payout offset** entity.
+> - **Keep the existing start date** and use the **Correction / payout offset** entity to compensate for the recalculation error: enter the difference between what the old settings would have produced and what the new settings calculate for the historical portion.
 
 ## Architecture
 

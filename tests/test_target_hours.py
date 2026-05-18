@@ -14,13 +14,22 @@ from custom_components.clockify_overtime.calculations import calculate_target_ho
 WORKDAYS_MON_FRI = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
 WORKDAYS_MON_THU = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY"]
 
+# A concrete calendar week used across all tests: 2025-01-06 (Mon) – 2025-01-12 (Sun)
+WEEK_MON = date(2025, 1, 6)   # Monday
+WEEK_TUE = date(2025, 1, 7)   # Tuesday
+WEEK_WED = date(2025, 1, 8)   # Wednesday
+WEEK_THU = date(2025, 1, 9)   # Thursday
+WEEK_FRI = date(2025, 1, 10)  # Friday
+WEEK_SAT = date(2025, 1, 11)  # Saturday
+WEEK_SUN = date(2025, 1, 12)  # Sunday
+
 
 def test_calculate_target_hours_basic():
     # SPEC: The simplest case — one full working week, constant 40 h contract.
     # Verifies that the per-day rate (40 h / 5 days = 8 h) is applied correctly
     # and that start and end dates are both INCLUSIVE.
     result = calculate_target_hours(
-        date(2025, 1, 6), date(2025, 1, 10), 40.0, WORKDAYS_MON_FRI, set()
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set()
     )
     assert result == 40.0
 
@@ -29,9 +38,9 @@ def test_calculate_target_hours_with_holiday_on_workday():
     # SPEC: Public holidays on working days must reduce the target — the user
     # cannot be expected to have worked on a statutory holiday.
     # Wed 2025-01-08 is treated as a holiday → only 4 billable days that week.
-    holiday = {date(2025, 1, 8)}
+    holiday = {WEEK_WED}
     result = calculate_target_hours(
-        date(2025, 1, 6), date(2025, 1, 10), 40.0, WORKDAYS_MON_FRI, holiday
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, holiday
     )
     assert result == 32.0
 
@@ -40,9 +49,9 @@ def test_calculate_target_hours_holiday_on_weekend():
     # SPEC: A public holiday that falls on a weekend must NOT reduce the target.
     # Saturday is already outside the working-day config; counting it twice would
     # incorrectly inflate the overtime balance.
-    holiday = {date(2025, 1, 11)}  # Saturday
+    holiday = {WEEK_SAT}
     result = calculate_target_hours(
-        date(2025, 1, 6), date(2025, 1, 12), 40.0, WORKDAYS_MON_FRI, holiday
+        WEEK_MON, WEEK_SUN, 40.0, WORKDAYS_MON_FRI, holiday
     )
     assert result == 40.0
 
@@ -52,6 +61,6 @@ def test_calculate_target_hours_four_day_week():
     # hardcoded to 5.  A user contracted Mon–Thu at 32 h/week works 8 h/day —
     # the same daily rate as a 40 h/5-day contract.
     result = calculate_target_hours(
-        date(2025, 1, 6), date(2025, 1, 9), 32.0, WORKDAYS_MON_THU, set()
+        WEEK_MON, WEEK_THU, 32.0, WORKDAYS_MON_THU, set()
     )
     assert result == 32.0

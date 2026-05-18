@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import ClockifyOvertimeCoordinator
-from .const import CONF_TRACKING_MODE, DOMAIN, TRACKING_MODE_BILLABLE
+from .const import DOMAIN
 
 
 async def async_setup_entry(
@@ -26,14 +26,10 @@ async def async_setup_entry(
 
     entities: list[SensorEntity] = [
         ClockifyActualHoursSensor(coordinator, entry, user_name),
+        ClockifyBillableHoursSensor(coordinator, entry, user_name),
         ClockifyTargetHoursSensor(coordinator, entry, user_name),
         ClockifyOvertimeBalanceSensor(coordinator, entry, user_name),
     ]
-
-    # Add the billable-hours sensor only when the user selected billable mode
-    tracking_mode = entry.data.get(CONF_TRACKING_MODE, entry.options.get(CONF_TRACKING_MODE, "all"))
-    if tracking_mode == TRACKING_MODE_BILLABLE:
-        entities.append(ClockifyBillableHoursSensor(coordinator, entry, user_name))
 
     async_add_entities(entities)
 
@@ -125,7 +121,7 @@ class ClockifyTargetHoursSensor(_ClockifyBaseSensor):
 
 
 class ClockifyOvertimeBalanceSensor(_ClockifyBaseSensor):
-    """Overtime balance = base hours − target hours − correction hours.
+    """Overtime balance = base hours − target hours + correction hours.
 
     *base hours* is either actual_hours (mode=all) or billable_hours (mode=billable).
     This sensor uses MEASUREMENT state class because the value can be negative.

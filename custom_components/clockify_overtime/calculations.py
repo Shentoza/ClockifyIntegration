@@ -61,11 +61,11 @@ def extract_holiday_dates(holidays: list[dict[str, Any]]) -> set[date]:
     dates: set[date] = set()
     for h in holidays:
         period = h.get("datePeriod", {})
-        start_str = period.get("start")
+        start_str = period.get("startDate")
         if not start_str:
             continue
         start = date.fromisoformat(start_str[:10])
-        end_str = period.get("end")
+        end_str = period.get("endDate")
         end = date.fromisoformat(end_str[:10]) if end_str else start
         current = start
         while current <= end:
