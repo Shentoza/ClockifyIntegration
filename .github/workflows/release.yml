@@ -1,0 +1,44 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version number (e.g. 0.3.0)"
+        required: true
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Bump version in manifest.json
+        run: |
+          sed -i 's/"version": "[^"]*"/"version": "${{ github.event.inputs.version }}"/' \
+            custom_components/clockify_overtime/manifest.json
+
+      - name: Update CHANGELOG.md
+        run: |
+          TODAY=$(date +%Y-%m-%d)
+          VERSION=${{ github.event.inputs.version }}
+          sed -i "s/## \[Unreleased\]/## [Unreleased]\n\n## [$VERSION] - $TODAY/" CHANGELOG.md
+
+      - name: Commit and tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add custom_components/clockify_overtime/manifest.json CHANGELOG.md
+          git commit -m "chore: bump version to ${{ github.event.inputs.version }}"
+          git tag v${{ github.event.inputs.version }}
+          git push && git push --tags
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create v${{ github.event.inputs.version }} \
+            --title "v${{ github.event.inputs.version }}" \
+            --generate-notes
