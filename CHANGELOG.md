@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-05-21
+
 ### Added
 
 - Per-project sensors: select any number of projects in the config / options flow and get a dedicated sensor per project showing total hours booked in the tracking period.
