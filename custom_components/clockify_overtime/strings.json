@@ -18,13 +18,15 @@
                     "start_date": "Tracking start date",
                     "correction_hours": "Correction / payout offset (hours)",
                     "scan_interval": "Update interval (minutes)",
-                    "excluded_project_ids": "Projects to exclude from billable hours"
+                    "excluded_project_ids": "Projects to exclude from billable hours",
+                    "project_sensor_ids": "Projects to expose as sensors"
                 },
                 "data_description": {
                     "working_days": "Select the days of the week you are contractually required to work.",
                     "hours_per_week": "Your contracted weekly working hours.",
                     "correction_hours": "Enter positive hours to add to your balance (e.g. banked overtime). Use negative values to subtract hours (e.g. paid-out overtime).",
-                    "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable."
+                    "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable.",
+                    "project_sensor_ids": "Each selected project gets a dedicated sensor showing total hours booked in the tracking period."
                 }
             }
         },
@@ -47,13 +49,15 @@
                     "start_date": "Tracking start date",
                     "correction_hours": "Correction / payout offset (hours)",
                     "scan_interval": "Update interval (minutes)",
-                    "excluded_project_ids": "Projects to exclude from billable hours"
+                    "excluded_project_ids": "Projects to exclude from billable hours",
+                    "project_sensor_ids": "Projects to expose as sensors"
                 },
                 "data_description": {
                     "working_days": "Select the days of the week you are contractually required to work.",
                     "hours_per_week": "Your contracted weekly working hours.",
                     "correction_hours": "Enter positive hours to add to your balance (e.g. banked overtime). Use negative values to subtract hours (e.g. paid-out overtime).",
-                    "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable."
+                    "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable.",
+                    "project_sensor_ids": "Each selected project gets a dedicated sensor showing total hours booked in the tracking period."
                 }
             }
         }
