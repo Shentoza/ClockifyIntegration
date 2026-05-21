@@ -29,6 +29,7 @@ from .const import (
     CONF_CORRECTION_HOURS,
     CONF_EXCLUDED_PROJECT_IDS,
     CONF_HOURS_PER_WEEK,
+    CONF_PROJECT_SENSOR_IDS,
     CONF_SCAN_INTERVAL,
     CONF_START_DATE,
     CONF_TRACKING_MODE,
@@ -128,12 +129,14 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
         if user_input is not None:
             excluded = _normalise_excluded(user_input.get(CONF_EXCLUDED_PROJECT_IDS, []))
+            sensor_ids = _normalise_excluded(user_input.get(CONF_PROJECT_SENSOR_IDS, []))
             return self.async_create_entry(
                 title=f"Clockify ({self._user_info['name']})",
                 data={
                     CONF_API_KEY: self._api_key,
                     CONF_TRACKING_MODE: user_input[CONF_TRACKING_MODE],
                     CONF_EXCLUDED_PROJECT_IDS: excluded,
+                    CONF_PROJECT_SENSOR_IDS: sensor_ids,
                     CONF_HOURS_PER_WEEK: float(user_input[CONF_HOURS_PER_WEEK]),
                     CONF_WORKING_DAYS: user_input.get(CONF_WORKING_DAYS, DEFAULT_WORKING_DAYS),
                     CONF_START_DATE: user_input[CONF_START_DATE],
@@ -158,6 +161,7 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_CORRECTION_HOURS: DEFAULT_CORRECTION_HOURS,
                     CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
                     CONF_EXCLUDED_PROJECT_IDS: [],
+                    CONF_PROJECT_SENSOR_IDS: [],
                 },
             ),
             errors=errors,
@@ -210,6 +214,7 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
         if user_input is not None:
             excluded = _normalise_excluded(user_input.get(CONF_EXCLUDED_PROJECT_IDS, []))
             user_input[CONF_EXCLUDED_PROJECT_IDS] = excluded
+            user_input[CONF_PROJECT_SENSOR_IDS] = _normalise_excluded(user_input.get(CONF_PROJECT_SENSOR_IDS, []))
             user_input[CONF_HOURS_PER_WEEK] = float(user_input[CONF_HOURS_PER_WEEK])
             user_input[CONF_CORRECTION_HOURS] = float(user_input[CONF_CORRECTION_HOURS])
             user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
@@ -232,6 +237,7 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
                     ),
                     CONF_SCAN_INTERVAL: int(current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)),
                     CONF_EXCLUDED_PROJECT_IDS: current.get(CONF_EXCLUDED_PROJECT_IDS, []),
+                    CONF_PROJECT_SENSOR_IDS: current.get(CONF_PROJECT_SENSOR_IDS, []),
                 },
             ),
             errors=errors,
@@ -298,13 +304,25 @@ def _build_tracking_schema(
         ),
     }
 
-    # Only show project multi-select when we have projects to choose from
+    # Only show project multi-selects when we have projects to choose from
     if projects:
         project_options = [{"value": p["id"], "label": p["name"]} for p in projects]
         schema[
             vol.Optional(
                 CONF_EXCLUDED_PROJECT_IDS,
                 default=defaults.get(CONF_EXCLUDED_PROJECT_IDS, []),
+            )
+        ] = SelectSelector(
+            SelectSelectorConfig(
+                options=project_options,
+                multiple=True,
+                mode=SelectSelectorMode.DROPDOWN,
+            )
+        )
+        schema[
+            vol.Optional(
+                CONF_PROJECT_SENSOR_IDS,
+                default=defaults.get(CONF_PROJECT_SENSOR_IDS, []),
             )
         ] = SelectSelector(
             SelectSelectorConfig(

@@ -20,6 +20,7 @@ from .const import (
     CONF_CORRECTION_HOURS,
     CONF_EXCLUDED_PROJECT_IDS,
     CONF_HOURS_PER_WEEK,
+    CONF_PROJECT_SENSOR_IDS,
     CONF_SCAN_INTERVAL,
     CONF_START_DATE,
     CONF_TRACKING_MODE,
@@ -190,6 +191,7 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         self._workspace_id: str = user_info.get("defaultWorkspace", "")
         # Cached after first successful load
         self._workspace_working_days: list[str] = []
+        self._project_name_cache: dict[str, str] = {}  # project_id -> project_name
 
         scan_interval = int(_opt(entry, CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL))
         super().__init__(
@@ -264,8 +266,17 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         )
 
         # 6. Compute hours
+        project_sensor_ids: list[str] = list(_opt(self.entry, CONF_PROJECT_SENSOR_IDS, []))
+
+        # Populate project name cache if any sensor IDs are not yet cached
+        if project_sensor_ids and any(pid not in self._project_name_cache for pid in project_sensor_ids):
+            projects = await self.api.get_projects(self._workspace_id)
+            for project in projects:
+                self._project_name_cache[project["id"]] = project["name"]
+
         actual_seconds = 0.0
         billable_seconds = 0.0
+        project_seconds: dict[str, float] = {pid: 0.0 for pid in project_sensor_ids}
 
         for entry in entries:
             # Skip pause/break entries
@@ -279,6 +290,11 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             is_excluded = entry.get("projectId") in excluded_ids
             if is_billable and not is_excluded:
                 billable_seconds += duration
+
+            # Per-project accumulation for sensor projects
+            pid = entry.get("projectId")
+            if pid and pid in project_seconds:
+                project_seconds[pid] += duration
 
         actual_hours = round(actual_seconds / 3600, 2)
         billable_hours = round(billable_seconds / 3600, 2)
@@ -305,6 +321,11 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         base_hours = billable_hours if tracking_mode == TRACKING_MODE_BILLABLE else actual_hours
         balance_hours = round(base_hours - target_hours + correction_hours, 2)
 
+        project_hours = {pid: round(secs / 3600, 2) for pid, secs in project_seconds.items()}
+        project_names = {
+            pid: self._project_name_cache.get(pid, pid) for pid in project_sensor_ids
+        }
+
         return {
             "total_hours": actual_hours,
             "billable_hours": billable_hours,
@@ -315,6 +336,8 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             "tracking_mode": tracking_mode,
             "start_date": start_date_str,
             "last_updated": datetime.now(timezone.utc).isoformat(),
+            "project_hours": project_hours,
+            "project_names": project_names,
         }
 
 
@@ -341,5 +364,6 @@ def _structural_snapshot(entry: ConfigEntry) -> dict:
         CONF_WORKING_DAYS,
         CONF_HOURS_PER_WEEK,
         CONF_EXCLUDED_PROJECT_IDS,
+        CONF_PROJECT_SENSOR_IDS,
     }
     return {k: _opt(entry, k, None) for k in keys}

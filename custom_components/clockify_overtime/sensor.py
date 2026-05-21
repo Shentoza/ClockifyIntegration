@@ -11,7 +11,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import ClockifyOvertimeCoordinator
-from .const import DOMAIN
+from .const import CONF_PROJECT_SENSOR_IDS, DOMAIN
 
 
 async def async_setup_entry(
@@ -30,6 +30,16 @@ async def async_setup_entry(
         ClockifyTargetHoursSensor(coordinator, entry, user_name),
         ClockifyOvertimeBalanceSensor(coordinator, entry, user_name),
     ]
+
+    # One sensor per selected project
+    project_sensor_ids: list[str] = list(
+        entry.options.get(CONF_PROJECT_SENSOR_IDS,
+        entry.data.get(CONF_PROJECT_SENSOR_IDS, []))
+    )
+    project_names: dict[str, str] = coordinator.data.get("project_names", {}) if coordinator.data else {}
+    for project_id in project_sensor_ids:
+        project_name = project_names.get(project_id, project_id)
+        entities.append(ClockifyProjectHoursSensor(coordinator, entry, user_name, project_id, project_name))
 
     async_add_entities(entities)
 
@@ -149,3 +159,26 @@ class ClockifyOvertimeBalanceSensor(_ClockifyBaseSensor):
                 }
             )
         return attrs
+
+
+class ClockifyProjectHoursSensor(_ClockifyBaseSensor):
+    """Hours booked on a specific project within the tracking period."""
+
+    _attr_icon = "mdi:folder-clock-outline"
+
+    def __init__(
+        self,
+        coordinator: ClockifyOvertimeCoordinator,
+        entry: ConfigEntry,
+        user_name: str,
+        project_id: str,
+        project_name: str,
+    ) -> None:
+        super().__init__(coordinator, entry, user_name, f"project_{project_id}", project_name)
+        self._project_id = project_id
+
+    @property
+    def native_value(self) -> float | None:
+        if not self.coordinator.data:
+            return None
+        return self.coordinator.data.get("project_hours", {}).get(self._project_id)
