@@ -121,7 +121,7 @@ class ClockifyTargetHoursSensor(_ClockifyBaseSensor):
 
 
 class ClockifyOvertimeBalanceSensor(_ClockifyBaseSensor):
-    """Overtime balance = base hours − target hours + correction hours.
+    """Overtime balance = base hours - target hours + correction hours.
 
     *base hours* is either actual_hours (mode=all) or billable_hours (mode=billable).
     This sensor uses MEASUREMENT state class because the value can be negative.

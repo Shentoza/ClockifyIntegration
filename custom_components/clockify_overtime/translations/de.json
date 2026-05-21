@@ -57,5 +57,31 @@
                 }
             }
         }
+    },
+    "services": {
+        "adjust_correction_hours": {
+            "name": "Korrekturguthaben anpassen",
+            "description": "Addiert (positiv) oder subtrahiert (negativ) Stunden vom Korrektur-Saldo der Uberstunden.",
+            "fields": {
+                "config_entry_id": {
+                    "name": "Integration",
+                    "description": "Die Clockify Overtime-Instanz, die aktualisiert werden soll."
+                },
+                "hours": {
+                    "name": "Stunden",
+                    "description": "Stunden, die addiert (positiv) oder subtrahiert (negativ) werden sollen."
+                }
+            }
+        },
+        "reset_correction_hours": {
+            "name": "Korrekturguthaben zuruecksetzen",
+            "description": "Setzt den Korrektur-Saldo der Uberstunden auf null.",
+            "fields": {
+                "config_entry_id": {
+                    "name": "Integration",
+                    "description": "Die Clockify Overtime-Instanz, die zurueckgesetzt werden soll."
+                }
+            }
+        }
     }
 }

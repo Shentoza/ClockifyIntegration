@@ -7,16 +7,20 @@ custom_components/clockify_overtime/
 ├── api.py            # Async Clockify HTTP client (no HA logic)
 ├── calculations.py   # Pure calculation helpers (no HA imports)
 ├── const.py          # All constants in one place
-├── __init__.py       # HA integration lifecycle + DataUpdateCoordinator
+├── __init__.py       # HA integration lifecycle + DataUpdateCoordinator + service actions
 ├── config_flow.py    # Setup wizard (2-step) + OptionsFlow
 ├── sensor.py         # Read-only HA sensor entities
-└── number.py         # Settable number entity (correction_hours)
+├── number.py         # Settable number entity (correction_hours)
+└── services.yaml     # Service action field selectors (names/descriptions in translations)
 tests/
 ├── conftest.py                  # Stubs homeassistant.* so pytest runs without HA
 ├── test_json_files.py           # validates all JSON files + translation key coverage
 ├── test_target_hours.py         # calculate_target_hours
 ├── test_holidays_and_timeoff.py # extract_holiday_dates, calculate_time_off_days
 └── test_time_entries.py         # entry_duration_seconds
+.github/workflows/
+├── hacs.yml                     # HACS Action — validates integration for HACS
+└── hassfest.yml                 # Hassfest — validates HA integration manifest
 ```
 
 The key design principle: **`calculations.py` has zero HA dependencies.** All
@@ -50,6 +54,12 @@ docker restart ha-dev
 ```
 
 ## Conventions
+
+### ASCII only in source code
+
+Always use the plain hyphen-minus `-` (U+002D). Never use the Unicode minus sign
+`-` (U+2212) or any other lookalike (en-dash, em-dash). This applies to source
+code, docstrings, comments, and JSON translation strings.
 
 ### Pure functions in `calculations.py`
 
@@ -92,6 +102,32 @@ flow — must only trigger `coordinator.async_request_refresh()`. The
 
 Do not add new config keys to `_structural_snapshot` unless a reload is genuinely
 required to apply them.
+
+### Service actions (`adjust_correction_hours`, `reset_correction_hours`)
+
+Both actions are registered in `async_setup` (not `async_setup_entry`) so they
+are available even before any config entry is loaded. They operate at the config
+entry level — the caller must pass `config_entry_id`.
+
+- `adjust_correction_hours`: adds `hours` (positive or negative) to the current
+  `correction_hours` option and calls `async_update_entry`. This fires
+  `_async_options_updated`, which detects the correction-only change and triggers
+  a coordinator refresh (no reload).
+- `reset_correction_hours`: sets `correction_hours` to `0.0` via the same
+  mechanism.
+
+Field selectors live in `services.yaml`; names and descriptions in
+`strings.json` and both translation files under the `services` key.
+
+## HACS Publication Checklist
+
+Before submitting a PR to `hacs/default`:
+1. Both GitHub Actions (`hacs.yml`, `hassfest.yml`) must pass with zero errors
+2. Create a GitHub **Release** (not just a tag) from the passing commit
+3. Repo must be public, have a description, topics, and issues enabled
+4. `hacs.json` must have `"name"` (already present)
+5. `custom_components/clockify_overtime/icon.png` must exist (already present)
+6. Submit PR to `hacs/default/integration` sorted alphabetically
 
 ## AI Disclosure
 

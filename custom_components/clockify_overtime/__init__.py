@@ -5,8 +5,11 @@ import logging
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
 
+import voluptuous as vol
+
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -39,6 +42,17 @@ from .calculations import (
 
 _LOGGER = logging.getLogger(__name__)
 
+SERVICE_ADJUST_CORRECTION = "adjust_correction_hours"
+SERVICE_RESET_CORRECTION = "reset_correction_hours"
+
+_SCHEMA_ADJUST = vol.Schema({
+    vol.Required("config_entry_id"): str,
+    vol.Required("hours"): vol.Coerce(float),
+})
+_SCHEMA_RESET = vol.Schema({
+    vol.Required("config_entry_id"): str,
+})
+
 
 # ---------------------------------------------------------------------------
 # HA integration lifecycle
@@ -46,8 +60,44 @@ _LOGGER = logging.getLogger(__name__)
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
-    """Set up the Clockify Overtime domain (YAML bootstrap — no-op)."""
+    """Set up the Clockify Overtime domain and register service actions."""
     hass.data.setdefault(DOMAIN, {})
+
+    async def _handle_adjust_correction(call: ServiceCall) -> None:
+        """Add or subtract hours from the overtime correction balance."""
+        config_entry_id: str = call.data["config_entry_id"]
+        hours: float = call.data["hours"]
+        entry = hass.config_entries.async_get_entry(config_entry_id)
+        if not entry or entry.domain != DOMAIN:
+            raise HomeAssistantError(
+                f"Config entry '{config_entry_id}' not found for {DOMAIN}"
+            )
+        current = float(entry.options.get(CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS))
+        new_value = round(current + hours, 2)
+        hass.config_entries.async_update_entry(
+            entry, options={**entry.options, CONF_CORRECTION_HOURS: new_value}
+        )
+
+    async def _handle_reset_correction(call: ServiceCall) -> None:
+        """Reset the overtime correction balance to zero."""
+        config_entry_id: str = call.data["config_entry_id"]
+        entry = hass.config_entries.async_get_entry(config_entry_id)
+        if not entry or entry.domain != DOMAIN:
+            raise HomeAssistantError(
+                f"Config entry '{config_entry_id}' not found for {DOMAIN}"
+            )
+        hass.config_entries.async_update_entry(
+            entry, options={**entry.options, CONF_CORRECTION_HOURS: 0.0}
+        )
+
+    hass.services.async_register(
+        DOMAIN, SERVICE_ADJUST_CORRECTION, _handle_adjust_correction,
+        schema=_SCHEMA_ADJUST,
+    )
+    hass.services.async_register(
+        DOMAIN, SERVICE_RESET_CORRECTION, _handle_reset_correction,
+        schema=_SCHEMA_RESET,
+    )
     return True
 
 

@@ -18,7 +18,7 @@ This integration connects to the Clockify time-tracking API and computes an over
 | Total Hours | h | (main) | All non-break time entries since start date |
 | Billable Hours | h | (main) | Only entries flagged billable and not excluded (billable mode only) |
 | Target Hours | h | Diagnostic | Expected hours based on schedule and contracted hours |
-| Overtime Balance | h | (main) | Total/Billable hours − Target hours + Correction hours |
+| Overtime Balance | h | (main) | Total/Billable hours - Target hours + Correction hours |
 
 ## Controls
 

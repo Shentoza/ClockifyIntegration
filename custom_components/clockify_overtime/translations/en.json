@@ -57,5 +57,31 @@
         }
       }
     }
+  },
+  "services": {
+    "adjust_correction_hours": {
+      "name": "Adjust correction hours",
+      "description": "Adds (positive) or subtracts (negative) hours from the overtime correction balance.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The Clockify Overtime integration instance to update."
+        },
+        "hours": {
+          "name": "Hours",
+          "description": "Hours to add (positive) or subtract (negative) from the correction balance."
+        }
+      }
+    },
+    "reset_correction_hours": {
+      "name": "Reset correction hours",
+      "description": "Resets the overtime correction balance to zero.",
+      "fields": {
+        "config_entry_id": {
+          "name": "Config entry",
+          "description": "The Clockify Overtime integration instance to reset."
+        }
+      }
+    }
   }
 }

@@ -9,6 +9,7 @@ _HA_MODULES = [
     "homeassistant.config_entries",
     "homeassistant.core",
     "homeassistant.const",
+    "homeassistant.exceptions",
     "homeassistant.helpers",
     "homeassistant.helpers.aiohttp_client",
     "homeassistant.helpers.update_coordinator",
