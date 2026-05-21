@@ -10,6 +10,7 @@ import voluptuous as vol
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
@@ -41,6 +42,11 @@ from .calculations import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+# Required by Hassfest: integrations that implement async_setup must declare
+# CONFIG_SCHEMA. Since this integration is config-entry-only, we use the
+# appropriate helper so HA knows no YAML configuration is accepted.
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 SERVICE_ADJUST_CORRECTION = "adjust_correction_hours"
 SERVICE_RESET_CORRECTION = "reset_correction_hours"
