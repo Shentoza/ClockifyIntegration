@@ -135,7 +135,13 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             excluded = _normalise_excluded(user_input.get(CONF_EXCLUDED_PROJECT_IDS, []))
             sensor_ids = _normalise_excluded(user_input.get(CONF_PROJECT_SENSOR_IDS, []))
-            return self.async_create_entry(
+            start_date_str: str = user_input.get(CONF_START_DATE, "")
+            if start_date_str and date.fromisoformat(start_date_str) > date.today():
+                errors[CONF_START_DATE] = "start_date_in_future"
+            if not user_input.get(CONF_WORKING_DAYS):
+                errors[CONF_WORKING_DAYS] = "working_days_empty"
+            if not errors:
+                return self.async_create_entry(
                 title=f"Clockify ({self._user_info['name']})",
                 data={
                     CONF_API_KEY: self._api_key,
@@ -250,7 +256,13 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
             user_input[CONF_CORRECTION_HOURS] = float(user_input[CONF_CORRECTION_HOURS])
             user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
             user_input[CONF_WORKING_DAYS] = user_input.get(CONF_WORKING_DAYS, DEFAULT_WORKING_DAYS)
-            return self.async_create_entry(title="", data=user_input)
+            start_date_str: str = user_input.get(CONF_START_DATE, "")
+            if start_date_str and date.fromisoformat(start_date_str) > date.today():
+                errors[CONF_START_DATE] = "start_date_in_future"
+            if not user_input.get(CONF_WORKING_DAYS):
+                errors[CONF_WORKING_DAYS] = "working_days_empty"
+            if not errors:
+                return self.async_create_entry(title="", data=user_input)
 
         return self.async_show_form(
             step_id="init",

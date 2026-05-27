@@ -6,9 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+### Added
+- Added some error handling in config flow
+### Changed
+- Did some refactoring to reuse the time_off_days in init
+- More proper utc parsing
 
 ## [0.3.0] - 2026-05-27
-
 ### Added
 - You can now add sensors for the working times of this and last week
 

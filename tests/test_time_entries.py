@@ -2,11 +2,10 @@
 
 Verifies that Clockify time-entry objects are converted to seconds correctly,
 including edge cases like missing start timestamps and zero-length entries.
-Running-timer entries (no end timestamp) are not tested here because they
-depend on datetime.now() and are non-deterministic.
 """
 import sys
 import os
+from datetime import datetime, timezone
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
@@ -46,3 +45,11 @@ def test_entry_duration_seconds_zero_duration():
     # an entry where start == end.  The result must be exactly 0.0, not
     # negative (which would incorrectly reduce the actual hours total).
     assert entry_duration_seconds(_entry(MON_START, MON_START)) == 0.0
+
+
+def test_entry_duration_seconds_running_timer():
+    # SPEC: A running timer (no end timestamp) must use the provided now_utc
+    # reference time as the end, making the result fully deterministic.
+    # Mon 08:00 → now_utc 10:30 = 2.5 h = 9 000 s.
+    now = datetime(2025, 1, 6, 10, 30, 0, tzinfo=timezone.utc)
+    assert entry_duration_seconds(_entry(MON_START, None), now_utc=now) == 9000.0

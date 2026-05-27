@@ -64,3 +64,13 @@ def test_calculate_target_hours_four_day_week():
         WEEK_MON, WEEK_THU, 32.0, WORKDAYS_MON_THU, set()
     )
     assert result == 32.0
+
+
+def test_calculate_target_hours_deducts_time_off_days():
+    # SPEC: Approved time-off days are deducted from the target at the
+    # hours-per-day rate (hours_per_week / num_working_days).  One leave day on
+    # a standard 40 h / 5-day contract must reduce the target by exactly 8 h.
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(), time_off_days=1.0
+    )
+    assert result == 32.0

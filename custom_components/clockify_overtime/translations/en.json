@@ -36,13 +36,19 @@
     },
     "error": {
       "cannot_connect": "Could not connect to Clockify. Please check your API key and network connection.",
-      "unknown": "An unexpected error occurred. Please check the logs."
+      "unknown": "An unexpected error occurred. Please check the logs.",
+      "start_date_in_future": "Tracking start date cannot be in the future.",
+      "working_days_empty": "At least one working day must be selected."
     },
     "abort": {
       "already_configured": "Clockify Overtime is already configured for this account."
     }
   },
   "options": {
+    "error": {
+      "start_date_in_future": "Tracking start date cannot be in the future.",
+      "working_days_empty": "At least one working day must be selected."
+    },
     "step": {
       "init": {
         "title": "Update Tracking Settings",

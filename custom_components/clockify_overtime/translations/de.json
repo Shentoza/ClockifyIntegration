@@ -36,13 +36,19 @@
         },
         "error": {
             "cannot_connect": "Verbindung zu Clockify fehlgeschlagen. Bitte API-Key und Netzwerkverbindung prüfen.",
-            "unknown": "Unerwarteter Fehler. Bitte die Logs prüfen."
+            "unknown": "Unerwarteter Fehler. Bitte die Logs prüfen.",
+            "start_date_in_future": "Das Tracking-Startdatum darf nicht in der Zukunft liegen.",
+            "working_days_empty": "Es muss mindestens ein Arbeitstag ausgewählt sein."
         },
         "abort": {
             "already_configured": "Clockify Overtime ist für diesen Account bereits eingerichtet."
         }
     },
     "options": {
+        "error": {
+            "start_date_in_future": "Das Tracking-Startdatum darf nicht in der Zukunft liegen.",
+            "working_days_empty": "Es muss mindestens ein Arbeitstag ausgewählt sein."
+        },
         "step": {
             "init": {
                 "title": "Tracking-Einstellungen anpassen",

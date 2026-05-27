@@ -23,6 +23,7 @@ def calculate_target_hours(
     hours_per_week: float,
     working_days: list[str],
     holiday_dates: set[date],
+    time_off_days: float = 0.0,
 ) -> float:
     """Return expected (target) hours from *start* to *end* inclusive.
 
@@ -35,6 +36,9 @@ def calculate_target_hours(
 
     Days that are in *holiday_dates* or that fall outside *working_days*
     are not counted towards the target.
+
+    *time_off_days* approved leave days are deducted from the target using
+    the same *hours_per_day* rate, preventing double-deduction with holidays.
     """
     work_day_numbers = {WEEKDAY_MAP[d] for d in working_days if d in WEEKDAY_MAP}
     num_work_days_per_week = len(work_day_numbers) or 5  # safety: avoid zero division
@@ -45,7 +49,7 @@ def calculate_target_hours(
         if current.weekday() in work_day_numbers and current not in holiday_dates:
             total_hours += hours_per_day
         current += timedelta(days=1)
-    return round(total_hours, 2)
+    return round(total_hours - time_off_days * hours_per_day, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -133,11 +137,14 @@ def calculate_time_off_days(
 # ---------------------------------------------------------------------------
 
 
-def entry_duration_seconds(entry: dict[str, Any]) -> float:
+def entry_duration_seconds(
+    entry: dict[str, Any],
+    now_utc: datetime | None = None,
+) -> float:
     """Return the duration of a Clockify time entry in seconds.
 
-    For running timers (no *end* timestamp) the current UTC time is used,
-    so live timers contribute to the total hours in real time.
+    For running timers (no *end* timestamp) *now_utc* is used as the end time.
+    Pass a fixed datetime in tests to make the result deterministic.
     """
     interval = entry.get("timeInterval", {})
     start_str = interval.get("start")
@@ -148,7 +155,7 @@ def entry_duration_seconds(entry: dict[str, Any]) -> float:
     end = (
         datetime.fromisoformat(end_str.replace("Z", "+00:00"))
         if end_str
-        else datetime.now(timezone.utc)
+        else (now_utc or datetime.now(timezone.utc))
     )
     return max(0.0, (end - start).total_seconds())
 
