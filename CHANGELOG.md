@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- You can now add sensors for the working times of this and last week
+
 ## [0.2.0] - 2026-05-21
 
 ### Added

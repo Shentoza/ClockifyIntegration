@@ -11,6 +11,7 @@ from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.helpers.aiohttp_client import async_get_clientsession
 from homeassistant.helpers.selector import (
+    BooleanSelector,
     DateSelector,
     NumberSelector,
     NumberSelectorConfig,
@@ -27,6 +28,8 @@ from .api import ClockifyApi, ClockifyApiError
 from .const import (
     CONF_API_KEY,
     CONF_CORRECTION_HOURS,
+    CONF_ENABLE_LAST_WEEK_SENSORS,
+    CONF_ENABLE_THIS_WEEK_SENSORS,
     CONF_EXCLUDED_PROJECT_IDS,
     CONF_HOURS_PER_WEEK,
     CONF_PROJECT_SENSOR_IDS,
@@ -35,6 +38,8 @@ from .const import (
     CONF_TRACKING_MODE,
     CONF_WORKING_DAYS,
     DEFAULT_CORRECTION_HOURS,
+    DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+    DEFAULT_ENABLE_THIS_WEEK_SENSORS,
     DEFAULT_HOURS_PER_WEEK,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TRACKING_MODE,
@@ -137,6 +142,18 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_TRACKING_MODE: user_input[CONF_TRACKING_MODE],
                     CONF_EXCLUDED_PROJECT_IDS: excluded,
                     CONF_PROJECT_SENSOR_IDS: sensor_ids,
+                    CONF_ENABLE_LAST_WEEK_SENSORS: bool(
+                        user_input.get(
+                            CONF_ENABLE_LAST_WEEK_SENSORS,
+                            DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+                        )
+                    ),
+                    CONF_ENABLE_THIS_WEEK_SENSORS: bool(
+                        user_input.get(
+                            CONF_ENABLE_THIS_WEEK_SENSORS,
+                            DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+                        )
+                    ),
                     CONF_HOURS_PER_WEEK: float(user_input[CONF_HOURS_PER_WEEK]),
                     CONF_WORKING_DAYS: user_input.get(CONF_WORKING_DAYS, DEFAULT_WORKING_DAYS),
                     CONF_START_DATE: user_input[CONF_START_DATE],
@@ -162,6 +179,8 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
                     CONF_EXCLUDED_PROJECT_IDS: [],
                     CONF_PROJECT_SENSOR_IDS: [],
+                    CONF_ENABLE_LAST_WEEK_SENSORS: DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+                    CONF_ENABLE_THIS_WEEK_SENSORS: DEFAULT_ENABLE_THIS_WEEK_SENSORS,
                 },
             ),
             errors=errors,
@@ -215,6 +234,18 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
             excluded = _normalise_excluded(user_input.get(CONF_EXCLUDED_PROJECT_IDS, []))
             user_input[CONF_EXCLUDED_PROJECT_IDS] = excluded
             user_input[CONF_PROJECT_SENSOR_IDS] = _normalise_excluded(user_input.get(CONF_PROJECT_SENSOR_IDS, []))
+            user_input[CONF_ENABLE_LAST_WEEK_SENSORS] = bool(
+                user_input.get(
+                    CONF_ENABLE_LAST_WEEK_SENSORS,
+                    DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+                )
+            )
+            user_input[CONF_ENABLE_THIS_WEEK_SENSORS] = bool(
+                user_input.get(
+                    CONF_ENABLE_THIS_WEEK_SENSORS,
+                    DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+                )
+            )
             user_input[CONF_HOURS_PER_WEEK] = float(user_input[CONF_HOURS_PER_WEEK])
             user_input[CONF_CORRECTION_HOURS] = float(user_input[CONF_CORRECTION_HOURS])
             user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
@@ -238,6 +269,18 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
                     CONF_SCAN_INTERVAL: int(current.get(CONF_SCAN_INTERVAL, DEFAULT_SCAN_INTERVAL)),
                     CONF_EXCLUDED_PROJECT_IDS: current.get(CONF_EXCLUDED_PROJECT_IDS, []),
                     CONF_PROJECT_SENSOR_IDS: current.get(CONF_PROJECT_SENSOR_IDS, []),
+                    CONF_ENABLE_LAST_WEEK_SENSORS: bool(
+                        current.get(
+                            CONF_ENABLE_LAST_WEEK_SENSORS,
+                            DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+                        )
+                    ),
+                    CONF_ENABLE_THIS_WEEK_SENSORS: bool(
+                        current.get(
+                            CONF_ENABLE_THIS_WEEK_SENSORS,
+                            DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+                        )
+                    ),
                 },
             ),
             errors=errors,
@@ -302,6 +345,20 @@ def _build_tracking_schema(
         ): NumberSelector(
             NumberSelectorConfig(min=5, max=1440, step=5, mode=NumberSelectorMode.BOX)
         ),
+        vol.Optional(
+            CONF_ENABLE_LAST_WEEK_SENSORS,
+            default=defaults.get(
+                CONF_ENABLE_LAST_WEEK_SENSORS,
+                DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+            ),
+        ): BooleanSelector(),
+        vol.Optional(
+            CONF_ENABLE_THIS_WEEK_SENSORS,
+            default=defaults.get(
+                CONF_ENABLE_THIS_WEEK_SENSORS,
+                DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+            ),
+        ): BooleanSelector(),
     }
 
     # Only show project multi-selects when we have projects to choose from

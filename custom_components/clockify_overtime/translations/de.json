@@ -19,14 +19,18 @@
                     "correction_hours": "Korrektur / Auszahlung (Stunden)",
                     "scan_interval": "Aktualisierungsintervall (Minuten)",
                     "excluded_project_ids": "Projekte von Projektstunden ausschließen",
-                    "project_sensor_ids": "Projekte als Sensoren anzeigen"
+                    "project_sensor_ids": "Projekte als Sensoren anzeigen",
+                    "enable_last_week_sensors": "Sensoren für letzte Woche aktivieren",
+                    "enable_this_week_sensors": "Sensoren für diese Woche aktivieren"
                 },
                 "data_description": {
                     "working_days": "Wähle die Wochentage aus, an denen du vertraglich arbeiten musst.",
                     "hours_per_week": "Deine vertraglich vereinbarte Wochenarbeitszeit.",
                     "correction_hours": "Positive Stunden werden zum Saldo addiert (z.B. angesparte Überstunden). Negative Stunden werden abgezogen (z.B. bereits ausbezahlte Überstunden).",
                     "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind.",
-                    "project_sensor_ids": "Jedes ausgewählte Projekt erhält einen eigenen Sensor mit den gebuchten Stunden im Tracking-Zeitraum."
+                    "project_sensor_ids": "Jedes ausgewählte Projekt erhält einen eigenen Sensor mit den gebuchten Stunden im Tracking-Zeitraum.",
+                    "enable_last_week_sensors": "Erstellt zwei zusätzliche Sensoren für die letzte Kalenderwoche: Gesamtstunden und verrechenbare Stunden.",
+                    "enable_this_week_sensors": "Erstellt zwei zusätzliche Sensoren für die aktuelle Kalenderwoche: Gesamtstunden und verrechenbare Stunden."
                 }
             }
         },
@@ -50,14 +54,18 @@
                     "correction_hours": "Korrektur / Auszahlung (Stunden)",
                     "scan_interval": "Aktualisierungsintervall (Minuten)",
                     "excluded_project_ids": "Projekte von Projektstunden ausschließen",
-                    "project_sensor_ids": "Projekte als Sensoren anzeigen"
+                    "project_sensor_ids": "Projekte als Sensoren anzeigen",
+                    "enable_last_week_sensors": "Sensoren für letzte Woche aktivieren",
+                    "enable_this_week_sensors": "Sensoren für diese Woche aktivieren"
                 },
                 "data_description": {
                     "working_days": "Wähle die Wochentage aus, an denen du vertraglich arbeiten musst.",
                     "hours_per_week": "Deine vertraglich vereinbarte Wochenarbeitszeit.",
                     "correction_hours": "Positive Stunden werden zum Saldo addiert (z.B. angesparte Überstunden). Negative Stunden werden abgezogen (z.B. bereits ausbezahlte Überstunden).",
                     "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind.",
-                    "project_sensor_ids": "Jedes ausgewählte Projekt erhält einen eigenen Sensor mit den gebuchten Stunden im Tracking-Zeitraum."
+                    "project_sensor_ids": "Jedes ausgewählte Projekt erhält einen eigenen Sensor mit den gebuchten Stunden im Tracking-Zeitraum.",
+                    "enable_last_week_sensors": "Erstellt zwei zusätzliche Sensoren für die letzte Kalenderwoche: Gesamtstunden und verrechenbare Stunden.",
+                    "enable_this_week_sensors": "Erstellt zwei zusätzliche Sensoren für die aktuelle Kalenderwoche: Gesamtstunden und verrechenbare Stunden."
                 }
             }
         }

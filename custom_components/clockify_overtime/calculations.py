@@ -151,3 +151,58 @@ def entry_duration_seconds(entry: dict[str, Any]) -> float:
         else datetime.now(timezone.utc)
     )
     return max(0.0, (end - start).total_seconds())
+
+
+def calculate_period_hours(
+    entries: list[dict[str, Any]],
+    period_start: date,
+    period_end: date,
+    excluded_project_ids: list[str],
+    now_utc: datetime | None = None,
+) -> tuple[float, float]:
+    """Return total and billable hours for a period, clipped to day boundaries.
+
+    The period is inclusive on both dates and interpreted in UTC.
+    Billable hours include only entries marked billable and not excluded via
+    *excluded_project_ids*.
+    """
+    if period_end < period_start:
+        return 0.0, 0.0
+
+    start_dt = datetime.combine(period_start, datetime.min.time(), tzinfo=timezone.utc)
+    end_exclusive_dt = datetime.combine(
+        period_end + timedelta(days=1), datetime.min.time(), tzinfo=timezone.utc
+    )
+
+    total_seconds = 0.0
+    billable_seconds = 0.0
+    now_value = now_utc or datetime.now(timezone.utc)
+
+    for entry in entries:
+        if entry.get("type") == "BREAK":
+            continue
+
+        interval = entry.get("timeInterval", {})
+        start_str = interval.get("start")
+        if not start_str:
+            continue
+
+        entry_start = datetime.fromisoformat(start_str.replace("Z", "+00:00"))
+        end_str = interval.get("end")
+        entry_end = (
+            datetime.fromisoformat(end_str.replace("Z", "+00:00"))
+            if end_str
+            else now_value
+        )
+
+        overlap_start = max(entry_start, start_dt)
+        overlap_end = min(entry_end, end_exclusive_dt)
+        overlap_seconds = max(0.0, (overlap_end - overlap_start).total_seconds())
+        if overlap_seconds <= 0:
+            continue
+
+        total_seconds += overlap_seconds
+        if entry.get("billable", False) and entry.get("projectId") not in excluded_project_ids:
+            billable_seconds += overlap_seconds
+
+    return round(total_seconds / 3600, 2), round(billable_seconds / 3600, 2)

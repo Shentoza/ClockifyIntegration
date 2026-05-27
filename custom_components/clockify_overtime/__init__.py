@@ -18,6 +18,8 @@ from .api import ClockifyApi, ClockifyApiError
 from .const import (
     CONF_API_KEY,
     CONF_CORRECTION_HOURS,
+    CONF_ENABLE_LAST_WEEK_SENSORS,
+    CONF_ENABLE_THIS_WEEK_SENSORS,
     CONF_EXCLUDED_PROJECT_IDS,
     CONF_HOURS_PER_WEEK,
     CONF_PROJECT_SENSOR_IDS,
@@ -26,6 +28,8 @@ from .const import (
     CONF_TRACKING_MODE,
     CONF_WORKING_DAYS,
     DEFAULT_CORRECTION_HOURS,
+    DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+    DEFAULT_ENABLE_THIS_WEEK_SENSORS,
     DEFAULT_HOURS_PER_WEEK,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TRACKING_MODE,
@@ -36,6 +40,7 @@ from .const import (
     WEEKDAY_MAP,
 )
 from .calculations import (
+    calculate_period_hours,
     calculate_target_hours,
     calculate_time_off_days,
     entry_duration_seconds,
@@ -227,6 +232,20 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         start_date_str: str = _opt(self.entry, CONF_START_DATE, "")
         tracking_mode: str = _opt(self.entry, CONF_TRACKING_MODE, DEFAULT_TRACKING_MODE)
         excluded_ids: list[str] = _opt(self.entry, CONF_EXCLUDED_PROJECT_IDS, [])
+        enable_last_week_sensors: bool = bool(
+            _opt(
+                self.entry,
+                CONF_ENABLE_LAST_WEEK_SENSORS,
+                DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+            )
+        )
+        enable_this_week_sensors: bool = bool(
+            _opt(
+                self.entry,
+                CONF_ENABLE_THIS_WEEK_SENSORS,
+                DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+            )
+        )
         correction_hours: float = float(
             _opt(self.entry, CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
         )
@@ -299,6 +318,32 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         actual_hours = round(actual_seconds / 3600, 2)
         billable_hours = round(billable_seconds / 3600, 2)
 
+        # 6b. Compute optional weekly aggregates
+        this_week_total_hours = 0.0
+        this_week_billable_hours = 0.0
+        last_week_total_hours = 0.0
+        last_week_billable_hours = 0.0
+
+        this_week_start = today - timedelta(days=today.weekday())
+        this_week_end = this_week_start + timedelta(days=6)
+        if enable_this_week_sensors:
+            this_week_total_hours, this_week_billable_hours = calculate_period_hours(
+                entries,
+                period_start=this_week_start,
+                period_end=this_week_end,
+                excluded_project_ids=excluded_ids,
+            )
+
+        if enable_last_week_sensors:
+            last_week_start = this_week_start - timedelta(days=7)
+            last_week_end = this_week_start - timedelta(days=1)
+            last_week_total_hours, last_week_billable_hours = calculate_period_hours(
+                entries,
+                period_start=last_week_start,
+                period_end=last_week_end,
+                excluded_project_ids=excluded_ids,
+            )
+
         # 7. Compute target (Soll-Stunden) minus time-off days
         num_working_days_per_week = len(
             [d for d in working_days if d in WEEKDAY_MAP]
@@ -338,6 +383,10 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             "last_updated": datetime.now(timezone.utc).isoformat(),
             "project_hours": project_hours,
             "project_names": project_names,
+            "this_week_total_hours": this_week_total_hours,
+            "this_week_billable_hours": this_week_billable_hours,
+            "last_week_total_hours": last_week_total_hours,
+            "last_week_billable_hours": last_week_billable_hours,
         }
 
 
@@ -365,5 +414,7 @@ def _structural_snapshot(entry: ConfigEntry) -> dict:
         CONF_HOURS_PER_WEEK,
         CONF_EXCLUDED_PROJECT_IDS,
         CONF_PROJECT_SENSOR_IDS,
+        CONF_ENABLE_LAST_WEEK_SENSORS,
+        CONF_ENABLE_THIS_WEEK_SENSORS,
     }
     return {k: _opt(entry, k, None) for k in keys}
