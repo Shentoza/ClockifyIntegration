@@ -37,7 +37,6 @@ from .const import (
     DOMAIN,
     PLATFORMS,
     TRACKING_MODE_BILLABLE,
-    WEEKDAY_MAP,
 )
 from .calculations import (
     calculate_period_hours,
@@ -345,20 +344,13 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             )
 
         # 7. Compute target (Soll-Stunden) minus time-off days
-        num_working_days_per_week = len(
-            [d for d in working_days if d in WEEKDAY_MAP]
-        ) or 5
-        hours_per_day_avg = hours_per_week / num_working_days_per_week
-        target_hours = round(
-            calculate_target_hours(
-                start_date,
-                today,
-                hours_per_week,
-                working_days,
-                holiday_dates,
-            )
-            - time_off_days * hours_per_day_avg,
-            2,
+        target_hours = calculate_target_hours(
+            start_date,
+            today,
+            hours_per_week,
+            working_days,
+            holiday_dates,
+            time_off_days=time_off_days,
         )
 
         # 8. Compute balance
