@@ -11,7 +11,12 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import ClockifyOvertimeCoordinator
-from .const import CONF_PROJECT_SENSOR_IDS, DOMAIN
+from .const import (
+    CONF_ENABLE_LAST_WEEK_SENSORS,
+    CONF_ENABLE_THIS_WEEK_SENSORS,
+    CONF_PROJECT_SENSOR_IDS,
+    DOMAIN,
+)
 
 
 async def async_setup_entry(
@@ -30,6 +35,35 @@ async def async_setup_entry(
         ClockifyTargetHoursSensor(coordinator, entry, user_name),
         ClockifyOvertimeBalanceSensor(coordinator, entry, user_name),
     ]
+
+    enable_last_week_sensors = bool(
+        entry.options.get(
+            CONF_ENABLE_LAST_WEEK_SENSORS,
+            entry.data.get(CONF_ENABLE_LAST_WEEK_SENSORS, False),
+        )
+    )
+    enable_this_week_sensors = bool(
+        entry.options.get(
+            CONF_ENABLE_THIS_WEEK_SENSORS,
+            entry.data.get(CONF_ENABLE_THIS_WEEK_SENSORS, False),
+        )
+    )
+
+    if enable_last_week_sensors:
+        entities.extend(
+            [
+                ClockifyLastWeekTotalHoursSensor(coordinator, entry, user_name),
+                ClockifyLastWeekBillableHoursSensor(coordinator, entry, user_name),
+            ]
+        )
+
+    if enable_this_week_sensors:
+        entities.extend(
+            [
+                ClockifyThisWeekTotalHoursSensor(coordinator, entry, user_name),
+                ClockifyThisWeekBillableHoursSensor(coordinator, entry, user_name),
+            ]
+        )
 
     # One sensor per selected project
     project_sensor_ids: list[str] = list(
@@ -182,3 +216,63 @@ class ClockifyProjectHoursSensor(_ClockifyBaseSensor):
         if not self.coordinator.data:
             return None
         return self.coordinator.data.get("project_hours", {}).get(self._project_id)
+
+
+class ClockifyLastWeekTotalHoursSensor(_ClockifyBaseSensor):
+    """Total booked hours in the previous calendar week (Mon-Sun)."""
+
+    _attr_icon = "mdi:calendar-arrow-left"
+
+    def __init__(self, coordinator, entry, user_name) -> None:
+        super().__init__(
+            coordinator,
+            entry,
+            user_name,
+            "last_week_total_hours",
+            "Last Week Total Hours",
+        )
+
+
+class ClockifyLastWeekBillableHoursSensor(_ClockifyBaseSensor):
+    """Billable hours in the previous calendar week (Mon-Sun)."""
+
+    _attr_icon = "mdi:calendar-arrow-left"
+
+    def __init__(self, coordinator, entry, user_name) -> None:
+        super().__init__(
+            coordinator,
+            entry,
+            user_name,
+            "last_week_billable_hours",
+            "Last Week Billable Hours",
+        )
+
+
+class ClockifyThisWeekTotalHoursSensor(_ClockifyBaseSensor):
+    """Total booked hours in the current calendar week (Mon-Sun)."""
+
+    _attr_icon = "mdi:calendar-arrow-right"
+
+    def __init__(self, coordinator, entry, user_name) -> None:
+        super().__init__(
+            coordinator,
+            entry,
+            user_name,
+            "this_week_total_hours",
+            "This Week Total Hours",
+        )
+
+
+class ClockifyThisWeekBillableHoursSensor(_ClockifyBaseSensor):
+    """Billable hours in the current calendar week (Mon-Sun)."""
+
+    _attr_icon = "mdi:calendar-arrow-right"
+
+    def __init__(self, coordinator, entry, user_name) -> None:
+        super().__init__(
+            coordinator,
+            entry,
+            user_name,
+            "this_week_billable_hours",
+            "This Week Billable Hours",
+        )
