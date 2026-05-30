@@ -7,9 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-05-30
+
 ### Changed
-- Target Hours for the current day are now calculated progressively.
-- half day offs are now properly handled
+- Target Hours for the current day are now calculated progressively. (#4 https://github.com/Shentoza/ClockifyIntegration/pull/4)
+- half day offs are now properly handled (#4 https://github.com/Shentoza/ClockifyIntegration/pull/4)
 
 ## [0.3.1] - 2026-05-27
 ### Added
