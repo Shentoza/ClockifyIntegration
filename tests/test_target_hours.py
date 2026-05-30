@@ -74,3 +74,94 @@ def test_calculate_target_hours_deducts_time_off_days():
         WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(), time_off_days=1.0
     )
     assert result == 32.0
+
+
+def test_calculate_target_hours_half_day_timeoff_reduces_by_half_day():
+    # SPEC: A half-day of approved leave (time_off_days=0.5) must reduce the
+    # target by exactly hours_per_day / 2.  On a 40 h / 5-day contract that is
+    # 4 h — not a full 8 h day — so the user must still work the other half.
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(), time_off_days=0.5
+    )
+    assert result == 36.0
+
+
+# ---------------------------------------------------------------------------
+# Progressive today tests
+# ---------------------------------------------------------------------------
+# All tests below use WEEK_MON..WEEK_FRI as the period.
+# today = WEEK_FRI (end date); Mon–Thu are full working days.
+# hours_per_day = 40 h / 5 days = 8 h/day; 4 past days = 32 h before today.
+
+
+def test_progressive_today_no_hours_tracked():
+    # SPEC: When the current day is a working day but no hours have been
+    # tracked yet, today must contribute 0 h to the target.  This prevents
+    # the overnight "overtime drop" where the balance falls by a full
+    # hours_per_day at midnight before any work has been recorded.
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
+        today_actual_hours=0.0,
+    )
+    assert result == 32.0  # Mon-Thu only; Fri contributes 0
+
+
+def test_progressive_today_partial_hours():
+    # SPEC: When fewer hours have been tracked today than the daily
+    # requirement, today's contribution to the target equals the hours
+    # actually tracked.  The balance stays at 0 — no deficit accumulates
+    # during an in-progress working day.
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
+        today_actual_hours=5.0,
+    )
+    assert result == 37.0  # 32 h (Mon-Thu) + 5 h (today so far)
+
+
+def test_progressive_today_exactly_full_hours():
+    # SPEC: When exactly the daily requirement has been tracked today,
+    # today's contribution equals hours_per_day — identical to the
+    # non-progressive result.  The balance is 0 (no overtime, no deficit).
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
+        today_actual_hours=8.0,
+    )
+    assert result == 40.0  # 32 h + 8 h = full week target
+
+
+def test_progressive_today_overtime():
+    # SPEC: When more than hours_per_day have been tracked today (e.g. 9 h
+    # on an 8 h day), today's target contribution is capped at hours_per_day.
+    # The overtime (1 h) appears in the balance, not in the target.
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
+        today_actual_hours=9.0,
+    )
+    assert result == 40.0  # cap at 8 h; the extra 1 h shows as overtime
+
+
+def test_progressive_today_half_day_timeoff_cap():
+    # SPEC: When a half-day off is taken today (today_time_off_days=0.5),
+    # the effective daily cap is halved (4 h for an 8 h/day contract).
+    # Working more than 4 h generates overtime; working less generates no
+    # deficit.  The global time_off_days subtraction excludes today's
+    # time-off (caller responsibility) so there is no double-deduction.
+    # today_actual=5 h > cap=4 h → today contributes 4 h → balance = +1 h.
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
+        time_off_days=0.0,  # today's time-off already excluded from global
+        today_actual_hours=5.0,
+        today_time_off_days=0.5,
+    )
+    assert result == 36.0  # 32 h (Mon-Thu) + 4 h (today capped at half-day)
+
+
+def test_progressive_today_no_contribution_on_holiday():
+    # SPEC: When today is a public holiday it is already excluded from the
+    # target.  Passing today_actual_hours must not add any hours for a
+    # holiday — the progressive logic only activates for working days.
+    result = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, {WEEK_FRI},
+        today_actual_hours=8.0,
+    )
+    assert result == 32.0  # Fri is holiday; even 8 h tracked adds nothing

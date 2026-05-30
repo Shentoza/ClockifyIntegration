@@ -282,6 +282,12 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             time_off_requests, working_days, holiday_dates,
             period_start=start_date, period_end=today,
         )
+        # Today's time-off fraction (0.0, 0.5, or 1.0) — used for the
+        # progressive today cap so a half-day off reduces the daily ceiling.
+        today_time_off = calculate_time_off_days(
+            time_off_requests, working_days, holiday_dates,
+            period_start=today, period_end=today,
+        )
 
         # 6. Compute hours
         project_sensor_ids: list[str] = list(_opt(self.entry, CONF_PROJECT_SENSOR_IDS, []))
@@ -344,13 +350,23 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             )
 
         # 7. Compute target (Soll-Stunden) minus time-off days
+        # Today's hours (total or billable depending on mode) drive the
+        # progressive cap so the balance never drops at midnight.
+        today_total_h, today_billable_h = calculate_period_hours(
+            entries, today, today, excluded_ids,
+        )
+        today_relevant_h = (
+            today_billable_h if tracking_mode == TRACKING_MODE_BILLABLE else today_total_h
+        )
         target_hours = calculate_target_hours(
             start_date,
             today,
             hours_per_week,
             working_days,
             holiday_dates,
-            time_off_days=time_off_days,
+            time_off_days=time_off_days - today_time_off,
+            today_actual_hours=today_relevant_h,
+            today_time_off_days=today_time_off,
         )
 
         # 8. Compute balance
