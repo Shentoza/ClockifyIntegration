@@ -1,5 +1,5 @@
 # Clockify Overtime Tracker — Home Assistant Integration
-[![CI](https://github.com/Shentoza/ClockifyIntegration/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Shentoza/ClockifyIntegration/actions/workflows/ci.yml)
+[![CI](https://github.com/Shentoza/ClockifyIntegration/actions/workflows/ci.yml/badge.svg)](https://github.com/Shentoza/ClockifyIntegration/actions/workflows/ci.yml)
 
 This integration connects to the Clockify time-tracking API and computes an overtime balance. It deducts approved time-off requests and public holidays from the expected work hours, so the balance always reflects what you actually owe or are owed.
 
