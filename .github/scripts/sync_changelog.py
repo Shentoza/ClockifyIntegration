@@ -18,6 +18,10 @@ def extract_changelog_section(pr_body: str) -> str | None:
     HTML comments (template instructions) and empty bullet points left over
     from the template are stripped before returning.
     """
+    # GitHub's web editor submits PR bodies with CRLF line endings; normalise
+    # to LF so all regex anchors and string comparisons work uniformly.
+    pr_body = pr_body.replace("\r\n", "\n").replace("\r", "\n")
+
     match = re.search(
         r"^## Changelog[ \t]*\n(.*?)(?=^## |\Z)",
         pr_body,
@@ -33,6 +37,12 @@ def extract_changelog_section(pr_body: str) -> str | None:
 
     # Remove empty bullet points left from the template ("- " with nothing after)
     section = re.sub(r"^-[ \t]*$", "", section, flags=re.MULTILINE)
+
+    # Remove ### subsections that have no content — only blank lines until
+    # the next ### heading or end of string.
+    section = re.sub(
+        r"^### [^\n]+\n(?:[ \t]*\n)*(?=### |\Z)", "", section, flags=re.MULTILINE
+    )
 
     # Strip trailing whitespace from each line
     lines = [line.rstrip() for line in section.splitlines()]
