@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Target Hours for the current day are now calculated progressively.
+- half day offs are now properly handled
+
 ## [0.3.1] - 2026-05-27
 ### Added
 - Added some error handling in config flow

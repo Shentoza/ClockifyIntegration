@@ -27,16 +27,17 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
       - name: Determine bump type
         id: bump
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          BUMP_INPUT: ${{ github.event.inputs.bump }}
+          LABELS: ${{ toJson(github.event.pull_request.labels.*.name) }}
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
-            echo "type=${{ github.event.inputs.bump }}" >> "$GITHUB_OUTPUT"
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "type=$BUMP_INPUT" >> "$GITHUB_OUTPUT"
           else
-            LABELS='${{ toJson(github.event.pull_request.labels.*.name) }}'
             if echo "$LABELS" | grep -q '"bump:major"'; then
               echo "type=major" >> "$GITHUB_OUTPUT"
             elif echo "$LABELS" | grep -q '"bump:minor"'; then
@@ -57,6 +58,18 @@ jobs:
             patch) PATCH=$((PATCH + 1)) ;;
           esac
           echo "version=$MAJOR.$MINOR.$PATCH" >> "$GITHUB_OUTPUT"
+
+      - name: Append PR reference to changelog items
+        if: github.event_name != 'workflow_dispatch'
+        run: |
+          PR_NUM="${{ github.event.pull_request.number }}"
+          PR_URL="${{ github.event.pull_request.html_url }}"
+          awk -v pr="#${PR_NUM}" -v url="${PR_URL}" '
+            /^## \[Unreleased\]/       { in_block=1 }
+            /^## \[/ && !/Unreleased/  { in_block=0 }
+            in_block && /^- / { sub(/[[:space:]]*$/, ""); print $0 " (" pr " " url ")"; next }
+            { print }
+          ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
 
       - name: Bump version in manifest.json
         run: |
@@ -82,6 +95,11 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create v${{ steps.version.outputs.version }} \
-            --title "v${{ steps.version.outputs.version }}" \
-            --generate-notes
+          VERSION="${{ steps.version.outputs.version }}"
+          awk -v ver="## [${VERSION}] -" '
+            substr($0, 1, length(ver)) == ver { found=1; next }
+            found && /^## \[/ { exit }
+            found { print }
+          ' CHANGELOG.md | gh release create "v${VERSION}" \
+            --title "v${VERSION}" \
+            --notes-file -

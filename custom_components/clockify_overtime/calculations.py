@@ -24,6 +24,8 @@ def calculate_target_hours(
     working_days: list[str],
     holiday_dates: set[date],
     time_off_days: float = 0.0,
+    today_actual_hours: float | None = None,
+    today_time_off_days: float = 0.0,
 ) -> float:
     """Return expected (target) hours from *start* to *end* inclusive.
 
@@ -39,6 +41,18 @@ def calculate_target_hours(
 
     *time_off_days* approved leave days are deducted from the target using
     the same *hours_per_day* rate, preventing double-deduction with holidays.
+    Must NOT include any time-off that falls on *end* when *today_actual_hours*
+    is provided, because today's time-off is handled via *today_time_off_days*.
+
+    *today_actual_hours* enables progressive tracking for the current (last)
+    day: instead of immediately adding the full *hours_per_day* at midnight,
+    today's contribution scales with the hours actually tracked so far, capped
+    at the effective daily requirement.  Pass the hours that match the active
+    tracking mode (total or billable).
+
+    *today_time_off_days* is the time-off fraction consumed on *end* today
+    (0.0 = none, 0.5 = half-day, 1.0 = full day).  It reduces today's cap so
+    a half-day off still generates overtime once the remaining half is exceeded.
     """
     work_day_numbers = {WEEKDAY_MAP[d] for d in working_days if d in WEEKDAY_MAP}
     num_work_days_per_week = len(work_day_numbers) or 5  # safety: avoid zero division
@@ -47,7 +61,13 @@ def calculate_target_hours(
     current = start
     while current <= end:
         if current.weekday() in work_day_numbers and current not in holiday_dates:
-            total_hours += hours_per_day
+            if today_actual_hours is not None and current == end:
+                # Progressive today: target grows with tracked hours, never
+                # adding more than the effective daily requirement.
+                today_cap = max(0.0, hours_per_day * (1.0 - today_time_off_days))
+                total_hours += min(today_actual_hours, today_cap)
+            else:
+                total_hours += hours_per_day
         current += timedelta(days=1)
     return round(total_hours - time_off_days * hours_per_day, 2)
 

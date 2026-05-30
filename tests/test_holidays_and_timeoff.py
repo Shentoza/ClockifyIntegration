@@ -150,3 +150,17 @@ def test_calculate_time_off_days_clamps_to_period_start():
         period_end=period_end,
     ) == 3.0  # only Wed, Thu, Fri count (Mon–Tue precede tracking start)
 
+
+def test_calculate_time_off_days_half_day_with_holiday_same_day():
+    # SPEC: When a half-day leave request falls on the same day as a public
+    # holiday, the day must count as 0 leave days — NOT 0.5.  The holiday
+    # already removes the full day from the target via extract_holiday_dates;
+    # counting 0.5 days of leave on top would double-deduct and artificially
+    # inflate the overtime balance.
+    holiday = {WEEK_MON}
+    assert calculate_time_off_days(
+        [_request(S_MON, S_MON, half_day=True)],
+        WORKDAYS_MON_FRI,
+        holiday,
+    ) == 0.0  # Mon is holiday; leave cannot stack on it
+

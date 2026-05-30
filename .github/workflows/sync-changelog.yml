@@ -1,0 +1,40 @@
+name: Sync Changelog
+
+on:
+  pull_request:
+    # opened/edited/synchronize: standard PR lifecycle
+    # ready_for_review: draft promoted to ready — run the sync then too
+    types: [opened, edited, synchronize, ready_for_review]
+    branches: [main]
+
+jobs:
+  sync-changelog:
+    name: Sync changelog from PR body
+    # Skip drafts — contributors fill in the changelog before marking ready.
+    # Skip forks — they cannot push back to this repo.
+    # Skip the bot's own sync commits to avoid a redundant second run.
+    if: ${{ !github.event.pull_request.draft
+        && github.event.pull_request.head.repo.full_name == github.repository
+        && github.actor != 'github-actions[bot]' }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+
+      - name: Update [Unreleased] block from PR body
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python3 .github/scripts/sync_changelog.py
+
+      - name: Commit if changed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git diff --quiet CHANGELOG.md || (
+            git add CHANGELOG.md &&
+            git commit -m "docs: sync changelog from PR #${{ github.event.pull_request.number }}" &&
+            git push --force-with-lease
+          )
