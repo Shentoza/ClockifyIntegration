@@ -7,8 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.3] - 2026-05-30
+
 ### Fixed
-- Release notes only have link to PR once. URL was redundant
+- Release notes only have link to PR once. URL was redundant (#7)
 
 ## [0.4.2] - 2026-05-30
 
