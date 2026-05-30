@@ -63,11 +63,10 @@ jobs:
         if: github.event_name != 'workflow_dispatch'
         run: |
           PR_NUM="${{ github.event.pull_request.number }}"
-          PR_URL="${{ github.event.pull_request.html_url }}"
-          awk -v pr="#${PR_NUM}" -v url="${PR_URL}" '
+          awk -v pr="#${PR_NUM}" '
             /^## \[Unreleased\]/       { in_block=1 }
             /^## \[/ && !/Unreleased/  { in_block=0 }
-            in_block && /^- / { sub(/[[:space:]]*$/, ""); print $0 " (" pr " " url ")"; next }
+            in_block && /^- / { sub(/[[:space:]]*$/, ""); print $0 " (" pr ")"; next }
             { print }
           ' CHANGELOG.md > CHANGELOG.tmp && mv CHANGELOG.tmp CHANGELOG.md
 
