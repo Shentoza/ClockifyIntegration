@@ -10,7 +10,6 @@ jobs:
   test:
     name: Tests
     # Tests only make sense on pull requests, not on push-to-main runs.
-    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
