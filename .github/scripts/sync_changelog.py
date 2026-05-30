@@ -10,6 +10,8 @@ import re
 import sys
 
 
+
+
 def extract_changelog_section(pr_body: str) -> str | None:
     """Return the text under the '## Changelog' heading in the PR body, or None.
 
@@ -49,14 +51,17 @@ def replace_unreleased_block(changelog: str, new_content: str) -> str:
 
     Walks the file line by line so version numbers and special characters
     in new_content are never misinterpreted as regex patterns.
+    Raises RuntimeError if the [Unreleased] heading is not found.
     """
     lines = changelog.splitlines(keepends=True)
     result: list[str] = []
     in_unreleased = False
+    found = False
 
     for line in lines:
         if line.rstrip() == "## [Unreleased]":
             in_unreleased = True
+            found = True
             result.append(line)
             result.append("\n")
             result.append(new_content + "\n")
@@ -68,6 +73,12 @@ def replace_unreleased_block(changelog: str, new_content: str) -> str:
             # else: skip old [Unreleased] content — it is replaced above
         else:
             result.append(line)
+
+    if not found:
+        raise RuntimeError(
+            "'## [Unreleased]' heading not found in CHANGELOG.md — "
+            "cannot sync PR changelog content."
+        )
 
     return "".join(result)
 
@@ -86,7 +97,11 @@ def main() -> None:
     with open("CHANGELOG.md", encoding="utf-8") as f:
         original = f.read()
 
-    updated = replace_unreleased_block(original, new_content)
+    try:
+        updated = replace_unreleased_block(original, new_content)
+    except RuntimeError as exc:
+        print(f"ERROR: {exc}")
+        sys.exit(1)
 
     if updated == original:
         print("CHANGELOG.md is already up to date.")
