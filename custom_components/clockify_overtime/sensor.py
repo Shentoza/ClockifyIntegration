@@ -12,9 +12,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import ClockifyOvertimeCoordinator
 from .const import (
+    CONF_CORRECTION_HOURS,
     CONF_ENABLE_LAST_WEEK_SENSORS,
     CONF_ENABLE_THIS_WEEK_SENSORS,
     CONF_PROJECT_SENSOR_IDS,
+    DEFAULT_CORRECTION_HOURS,
     DOMAIN,
 )
 
@@ -100,6 +102,7 @@ class _ClockifyBaseSensor(CoordinatorEntity[ClockifyOvertimeCoordinator], Sensor
         label: str,
     ) -> None:
         super().__init__(coordinator)
+        self._entry = entry
         self._data_key = data_key
         self._attr_name = label
         self._attr_unique_id = f"clockify_overtime_{entry.entry_id}_{data_key}"
@@ -183,12 +186,17 @@ class ClockifyOvertimeBalanceSensor(_ClockifyBaseSensor):
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = super().extra_state_attributes
         if self.coordinator.data:
+            # Read correction_hours from config entry instead of coordinator.data
+            # because it's user input, not a computed result
+            correction_hours = float(
+                self._entry.options.get(CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
+            )
             attrs.update(
                 {
                     "total_hours": self.coordinator.data.get("total_hours"),
                     "billable_hours": self.coordinator.data.get("billable_hours"),
                     "target_hours": self.coordinator.data.get("target_hours"),
-                    "correction_hours": self.coordinator.data.get("correction_hours"),
+                    "correction_hours": correction_hours,
                     "time_off_days": self.coordinator.data.get("time_off_days"),
                 }
             )

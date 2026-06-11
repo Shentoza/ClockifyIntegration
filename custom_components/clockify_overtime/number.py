@@ -70,12 +70,15 @@ class ClockifyCorrectionHoursNumber(
 
     @property
     def native_value(self) -> float:
-        """Return the current correction hours from coordinator data."""
-        if self.coordinator.data:
-            return float(
-                self.coordinator.data.get("correction_hours", DEFAULT_CORRECTION_HOURS)
-            )
-        return DEFAULT_CORRECTION_HOURS
+        """Return the current correction hours from config entry options.
+        
+        Read directly from entry.options instead of coordinator.data because
+        correction_hours is user input (config), not a computed result.
+        This prevents unwanted entity updates on each coordinator cycle.
+        """
+        return float(
+            self._entry.options.get(CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
+        )
 
     async def async_set_native_value(self, value: float) -> None:
         """Persist the new correction value and refresh the coordinator.

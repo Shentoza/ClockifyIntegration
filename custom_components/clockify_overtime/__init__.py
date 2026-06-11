@@ -385,7 +385,6 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             "billable_hours": billable_hours,
             "target_hours": target_hours,
             "balance_hours": balance_hours,
-            "correction_hours": correction_hours,
             "time_off_days": time_off_days,
             "tracking_mode": tracking_mode,
             "start_date": start_date_str,
