@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Multiple consecutive single-days off are now correctly counted, and don't increase the overtime accumulated.
+- Time frames for worked / tracked hours are only counted once, which should give the correct worked hours.
+
 ## [0.4.3] - 2026-05-30
 
 ### Fixed
