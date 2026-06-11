@@ -21,7 +21,9 @@
                     "excluded_project_ids": "Projekte von Projektstunden ausschließen",
                     "project_sensor_ids": "Projekte als Sensoren anzeigen",
                     "enable_last_week_sensors": "Sensoren für letzte Woche aktivieren",
-                    "enable_this_week_sensors": "Sensoren für diese Woche aktivieren"
+                    "enable_this_week_sensors": "Sensoren fur diese Woche aktivieren",
+                    "enable_last_week_target_sensor": "Sollstunden letzte Woche aktivieren",
+                    "enable_this_week_target_sensor": "Sollstunden diese Woche aktivieren"
                 },
                 "data_description": {
                     "working_days": "Wähle die Wochentage aus, an denen du vertraglich arbeiten musst.",
@@ -29,8 +31,10 @@
                     "correction_hours": "Positive Stunden werden zum Saldo addiert (z.B. angesparte Überstunden). Negative Stunden werden abgezogen (z.B. bereits ausbezahlte Überstunden).",
                     "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind.",
                     "project_sensor_ids": "Jedes ausgewählte Projekt erhält einen eigenen Sensor mit den gebuchten Stunden im Tracking-Zeitraum.",
-                    "enable_last_week_sensors": "Erstellt zwei zusätzliche Sensoren für die letzte Kalenderwoche: Gesamtstunden und verrechenbare Stunden.",
-                    "enable_this_week_sensors": "Erstellt zwei zusätzliche Sensoren für die aktuelle Kalenderwoche: Gesamtstunden und verrechenbare Stunden."
+                    "enable_last_week_sensors": "Erstellt zwei zusätzliche Sensoren für die letzte Kalenderwoche: Gesamtstunden und abrechenbare Stunden.",
+                    "enable_this_week_sensors": "Erstellt zwei zusätzliche Sensoren für die aktuelle Kalenderwoche: Gesamtstunden und abrechenbare Stunden.",
+                    "enable_last_week_target_sensor": "Erstellt einen Diagnose-Sensor mit den Sollstunden für die letzte Kalenderwoche.",
+                    "enable_this_week_target_sensor": "Erstellt einen Diagnose-Sensor mit den Sollstunden für die aktuelle Kalenderwoche."
                 }
             }
         },
@@ -62,7 +66,9 @@
                     "excluded_project_ids": "Projekte von Projektstunden ausschließen",
                     "project_sensor_ids": "Projekte als Sensoren anzeigen",
                     "enable_last_week_sensors": "Sensoren für letzte Woche aktivieren",
-                    "enable_this_week_sensors": "Sensoren für diese Woche aktivieren"
+                    "enable_this_week_sensors": "Sensoren für diese Woche aktivieren",
+                    "enable_last_week_target_sensor": "Sollstunden letzte Woche aktivieren",
+                    "enable_this_week_target_sensor": "Sollstunden diese Woche aktivieren"
                 },
                 "data_description": {
                     "working_days": "Wähle die Wochentage aus, an denen du vertraglich arbeiten musst.",
@@ -70,8 +76,10 @@
                     "correction_hours": "Positive Stunden werden zum Saldo addiert (z.B. angesparte Überstunden). Negative Stunden werden abgezogen (z.B. bereits ausbezahlte Überstunden).",
                     "excluded_project_ids": "Diese Projekte werden bei der Berechnung der Projektstunden ignoriert, auch wenn sie als verrechenbar markiert sind.",
                     "project_sensor_ids": "Jedes ausgewählte Projekt erhält einen eigenen Sensor mit den gebuchten Stunden im Tracking-Zeitraum.",
-                    "enable_last_week_sensors": "Erstellt zwei zusätzliche Sensoren für die letzte Kalenderwoche: Gesamtstunden und verrechenbare Stunden.",
-                    "enable_this_week_sensors": "Erstellt zwei zusätzliche Sensoren für die aktuelle Kalenderwoche: Gesamtstunden und verrechenbare Stunden."
+                    "enable_last_week_sensors": "Erstellt zwei zusätzliche Sensoren für die letzte Kalenderwoche: Gesamtstunden und abrechenbare Stunden.",
+                    "enable_this_week_sensors": "Erstellt zwei zusätzliche Sensoren für die aktuelle Kalenderwoche: Gesamtstunden und abrechenbare Stunden.",
+                    "enable_last_week_target_sensor": "Erstellt einen Diagnose-Sensor mit den Sollstunden für die letzte Kalenderwoche.",
+                    "enable_this_week_target_sensor": "Erstellt einen Diagnose-Sensor mit den Sollstunden für die aktuelle Kalenderwoche."
                 }
             }
         }
@@ -104,17 +112,41 @@
     },
     "entity": {
         "sensor": {
-            "total_hours": { "name": "Gesamtstunden" },
-            "billable_hours": { "name": "Abrechenbare Stunden" },
-            "target_hours": { "name": "Sollstunden" },
-            "overtime_balance": { "name": "Uberstunden-Saldo" },
-            "last_week_total_hours": { "name": "Letzte Woche Gesamt" },
-            "last_week_billable_hours": { "name": "Letzte Woche Abrechenbar" },
-            "this_week_total_hours": { "name": "Diese Woche Gesamt" },
-            "this_week_billable_hours": { "name": "Diese Woche Abrechenbar" }
+            "total_hours": {
+                "name": "Gesamtstunden"
+            },
+            "billable_hours": {
+                "name": "Abrechenbare Stunden"
+            },
+            "target_hours": {
+                "name": "Sollstunden"
+            },
+            "overtime_balance": {
+                "name": "Uberstunden-Saldo"
+            },
+            "last_week_total_hours": {
+                "name": "Letzte Woche Gesamt"
+            },
+            "last_week_billable_hours": {
+                "name": "Letzte Woche Abrechenbar"
+            },
+            "this_week_total_hours": {
+                "name": "Diese Woche Gesamt"
+            },
+            "this_week_billable_hours": {
+                "name": "Diese Woche Abrechenbar"
+            },
+            "last_week_target_hours": {
+                "name": "Letzte Woche Sollstunden"
+            },
+            "this_week_target_hours": {
+                "name": "Diese Woche Sollstunden"
+            }
         },
         "number": {
-            "correction_hours": { "name": "Korrekturstunden" }
+            "correction_hours": {
+                "name": "Korrekturstunden"
+            }
         }
     }
 }

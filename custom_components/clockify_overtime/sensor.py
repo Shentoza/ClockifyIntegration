@@ -15,6 +15,8 @@ from .const import (
     CONF_CORRECTION_HOURS,
     CONF_ENABLE_LAST_WEEK_SENSORS,
     CONF_ENABLE_THIS_WEEK_SENSORS,
+    CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+    CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
     CONF_PROJECT_SENSOR_IDS,
     DEFAULT_CORRECTION_HOURS,
     DOMAIN,
@@ -59,6 +61,12 @@ async def async_setup_entry(
             ]
         )
 
+    if entry.options.get(
+        CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+        entry.data.get(CONF_ENABLE_LAST_WEEK_TARGET_SENSOR, False),
+    ):
+        entities.append(ClockifyLastWeekTargetHoursSensor(coordinator, entry, user_name))
+
     if enable_this_week_sensors:
         entities.extend(
             [
@@ -66,6 +74,12 @@ async def async_setup_entry(
                 ClockifyThisWeekBillableHoursSensor(coordinator, entry, user_name),
             ]
         )
+
+    if entry.options.get(
+        CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
+        entry.data.get(CONF_ENABLE_THIS_WEEK_TARGET_SENSOR, False),
+    ):
+        entities.append(ClockifyThisWeekTargetHoursSensor(coordinator, entry, user_name))
 
     # One sensor per selected project
     project_sensor_ids: list[str] = list(
@@ -248,6 +262,17 @@ class ClockifyLastWeekBillableHoursSensor(_ClockifyBaseSensor):
         super().__init__(coordinator, entry, user_name, "last_week_billable_hours")
 
 
+class ClockifyLastWeekTargetHoursSensor(_ClockifyBaseSensor):
+    """Expected (target) hours for the previous calendar week (Mon-Sun)."""
+
+    _attr_icon = "mdi:calendar-arrow-left"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "last_week_target_hours"
+
+    def __init__(self, coordinator, entry, user_name) -> None:
+        super().__init__(coordinator, entry, user_name, "last_week_target_hours")
+
+
 class ClockifyThisWeekTotalHoursSensor(_ClockifyBaseSensor):
     """Total booked hours in the current calendar week (Mon-Sun)."""
 
@@ -266,3 +291,14 @@ class ClockifyThisWeekBillableHoursSensor(_ClockifyBaseSensor):
 
     def __init__(self, coordinator, entry, user_name) -> None:
         super().__init__(coordinator, entry, user_name, "this_week_billable_hours")
+
+
+class ClockifyThisWeekTargetHoursSensor(_ClockifyBaseSensor):
+    """Expected (target) hours for the current calendar week (Mon-Sun)."""
+
+    _attr_icon = "mdi:calendar-arrow-right"
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "this_week_target_hours"
+
+    def __init__(self, coordinator, entry, user_name) -> None:
+        super().__init__(coordinator, entry, user_name, "this_week_target_hours")
