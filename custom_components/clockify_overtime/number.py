@@ -43,7 +43,7 @@ class ClockifyCorrectionHoursNumber(
 
     _attr_icon = "mdi:cash-clock"
     _attr_has_entity_name = True
-    _attr_name = "Correction Hours"
+    _attr_translation_key = "correction_hours"
     _attr_entity_category = EntityCategory.CONFIG
     _attr_native_min_value = -9999.0
     _attr_native_max_value = 9999.0

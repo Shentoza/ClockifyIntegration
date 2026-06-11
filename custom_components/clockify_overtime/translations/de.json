@@ -101,5 +101,20 @@
                 }
             }
         }
+    },
+    "entity": {
+        "sensor": {
+            "total_hours": { "name": "Gesamtstunden" },
+            "billable_hours": { "name": "Abrechenbare Stunden" },
+            "target_hours": { "name": "Sollstunden" },
+            "overtime_balance": { "name": "Uberstunden-Saldo" },
+            "last_week_total_hours": { "name": "Letzte Woche Gesamt" },
+            "last_week_billable_hours": { "name": "Letzte Woche Abrechenbar" },
+            "this_week_total_hours": { "name": "Diese Woche Gesamt" },
+            "this_week_billable_hours": { "name": "Diese Woche Abrechenbar" }
+        },
+        "number": {
+            "correction_hours": { "name": "Korrekturstunden" }
+        }
     }
 }
