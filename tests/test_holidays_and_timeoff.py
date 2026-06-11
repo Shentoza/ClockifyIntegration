@@ -13,6 +13,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 from custom_components.clockify_overtime.calculations import (
     calculate_time_off_days,
     extract_holiday_dates,
+    split_time_off_days,
 )
 
 WORKDAYS_MON_FRI = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
@@ -163,4 +164,41 @@ def test_calculate_time_off_days_half_day_with_holiday_same_day():
         WORKDAYS_MON_FRI,
         holiday,
     ) == 0.0  # Mon is holiday; leave cannot stack on it
+
+
+def test_split_time_off_days_multiday_leave_windowing():
+    # SPEC: A multi-day sick leave must be split into stable buckets:
+    # past days [start..today-1], today-only, and total [start..today].
+    # This avoids subtraction-based drift in coordinator target assembly.
+    requests = [_request(S_TUE, S_SUN)]
+
+    past_days, today_days, total_days = split_time_off_days(
+        requests,
+        WORKDAYS_MON_FRI,
+        set(),
+        period_start=WEEK_MON,
+        today=WEEK_WED,
+    )
+
+    assert past_days == 1.0  # Tuesday
+    assert today_days == 1.0  # Wednesday
+    assert total_days == 2.0  # Tuesday + Wednesday
+
+
+def test_split_time_off_days_today_is_period_start():
+    # SPEC: If tracking starts today, past_days must be 0 and all approved
+    # leave for today appears only in today_days and total_days.
+    requests = [_request(S_WED, S_WED)]
+
+    past_days, today_days, total_days = split_time_off_days(
+        requests,
+        WORKDAYS_MON_FRI,
+        set(),
+        period_start=WEEK_WED,
+        today=WEEK_WED,
+    )
+
+    assert past_days == 0.0
+    assert today_days == 1.0
+    assert total_days == 1.0
 

@@ -41,9 +41,9 @@ from .const import (
 from .calculations import (
     calculate_period_hours,
     calculate_target_hours,
-    calculate_time_off_days,
     entry_duration_seconds,
     extract_holiday_dates,
+    split_time_off_days,
 )
 
 _LOGGER = logging.getLogger(__name__)
@@ -278,15 +278,14 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
         time_off_requests = await self.api.get_time_off_requests(
             self._workspace_id, user_id, start_str, end_str
         )
-        time_off_days = calculate_time_off_days(
-            time_off_requests, working_days, holiday_dates,
-            period_start=start_date, period_end=today,
-        )
-        # Today's time-off fraction (0.0, 0.5, or 1.0) — used for the
-        # progressive today cap so a half-day off reduces the daily ceiling.
-        today_time_off = calculate_time_off_days(
-            time_off_requests, working_days, holiday_dates,
-            period_start=today, period_end=today,
+        # Split approved leave into explicit windows to keep target assembly
+        # stable across refreshes while still supporting progressive today.
+        past_time_off_days, today_time_off, time_off_days = split_time_off_days(
+            time_off_requests,
+            working_days,
+            holiday_dates,
+            period_start=start_date,
+            today=today,
         )
 
         # 6. Compute hours
@@ -298,8 +297,6 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             for project in projects:
                 self._project_name_cache[project["id"]] = project["name"]
 
-        actual_seconds = 0.0
-        billable_seconds = 0.0
         project_seconds: dict[str, float] = {pid: 0.0 for pid in project_sensor_ids}
 
         for entry in entries:
@@ -307,21 +304,21 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             if entry.get("type") == "BREAK":
                 continue
             duration = entry_duration_seconds(entry)
-            actual_seconds += duration
-
-            # Billable = flagged as billable AND not in the exclusion list
-            is_billable = entry.get("billable", False)
-            is_excluded = entry.get("projectId") in excluded_ids
-            if is_billable and not is_excluded:
-                billable_seconds += duration
 
             # Per-project accumulation for sensor projects
             pid = entry.get("projectId")
             if pid and pid in project_seconds:
                 project_seconds[pid] += duration
 
-        actual_hours = round(actual_seconds / 3600, 2)
-        billable_hours = round(billable_seconds / 3600, 2)
+        # Use one period-clipped code path for base totals and week sensors.
+        # This avoids subtle over/under-counting when entries overlap date
+        # boundaries (for example, running timers or cross-midnight entries).
+        actual_hours, billable_hours = calculate_period_hours(
+            entries,
+            period_start=start_date,
+            period_end=today,
+            excluded_project_ids=excluded_ids,
+        )
 
         # 6b. Compute optional weekly aggregates
         this_week_total_hours = 0.0
@@ -364,7 +361,7 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             hours_per_week,
             working_days,
             holiday_dates,
-            time_off_days=time_off_days - today_time_off,
+            time_off_days=past_time_off_days,
             today_actual_hours=today_relevant_h,
             today_time_off_days=today_time_off,
         )

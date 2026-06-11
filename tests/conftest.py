@@ -5,6 +5,7 @@ from unittest.mock import MagicMock
 
 _HA_MODULES = [
     "aiohttp",
+    "voluptuous",
     "homeassistant",
     "homeassistant.config_entries",
     "homeassistant.core",

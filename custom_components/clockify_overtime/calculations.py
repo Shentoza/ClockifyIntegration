@@ -152,6 +152,52 @@ def calculate_time_off_days(
     return total
 
 
+def split_time_off_days(
+    requests: list[dict[str, Any]],
+    working_days: list[str],
+    holiday_dates: set[date],
+    period_start: date,
+    today: date,
+) -> tuple[float, float, float]:
+    """Split approved time-off into past days, today, and total.
+
+    Returns a tuple of ``(past_days, today_days, total_days)`` where:
+    - ``past_days`` covers ``[period_start, today-1]``
+    - ``today_days`` covers only ``[today, today]``
+    - ``total_days`` covers ``[period_start, today]``
+
+    Using explicit windows avoids relying on subtraction (``total - today``),
+    which can hide inconsistencies when API responses change during refreshes.
+    """
+    total_days = calculate_time_off_days(
+        requests,
+        working_days,
+        holiday_dates,
+        period_start=period_start,
+        period_end=today,
+    )
+    today_days = calculate_time_off_days(
+        requests,
+        working_days,
+        holiday_dates,
+        period_start=today,
+        period_end=today,
+    )
+
+    if today <= period_start:
+        past_days = 0.0
+    else:
+        past_days = calculate_time_off_days(
+            requests,
+            working_days,
+            holiday_dates,
+            period_start=period_start,
+            period_end=today - timedelta(days=1),
+        )
+
+    return round(past_days, 2), round(today_days, 2), round(total_days, 2)
+
+
 # ---------------------------------------------------------------------------
 # Time-entry duration
 # ---------------------------------------------------------------------------
