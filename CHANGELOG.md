@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.6] - 2026-06-11
+
+### Fixed
+- Correction Hours don't get updated every coordinator cycle, since it's a numbers input to offset the calculations. (#10)
+- Provide localizations for sensor names (#10)
+
 ## [0.4.5] - 2026-06-11
 
 ### Changed
