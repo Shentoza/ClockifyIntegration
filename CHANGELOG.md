@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.4.5] - 2026-06-11
+
+### Changed
+- Current day progressive calculation (adding needed hours while working) is only done for the current day. For all days in the past we just take the existing logic of determining needed hours and worked hours (#9)
+- Changelog update is now fully done on release onto main, instead of the open PR (#9)
+
+### Fixed
+- Accumulating needed hours for the current day (#9)
+
 ## [0.4.4] - 2026-06-11
 
 ### Fixed
