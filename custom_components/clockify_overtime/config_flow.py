@@ -30,6 +30,8 @@ from .const import (
     CONF_CORRECTION_HOURS,
     CONF_ENABLE_LAST_WEEK_SENSORS,
     CONF_ENABLE_THIS_WEEK_SENSORS,
+    CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+    CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
     CONF_EXCLUDED_PROJECT_IDS,
     CONF_HOURS_PER_WEEK,
     CONF_PROJECT_SENSOR_IDS,
@@ -40,6 +42,8 @@ from .const import (
     DEFAULT_CORRECTION_HOURS,
     DEFAULT_ENABLE_LAST_WEEK_SENSORS,
     DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+    DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+    DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
     DEFAULT_HOURS_PER_WEEK,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TRACKING_MODE,
@@ -160,6 +164,18 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                             DEFAULT_ENABLE_THIS_WEEK_SENSORS,
                         )
                     ),
+                    CONF_ENABLE_LAST_WEEK_TARGET_SENSOR: bool(
+                        user_input.get(
+                            CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                            DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                        )
+                    ),
+                    CONF_ENABLE_THIS_WEEK_TARGET_SENSOR: bool(
+                        user_input.get(
+                            CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
+                            DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
+                        )
+                    ),
                     CONF_HOURS_PER_WEEK: float(user_input[CONF_HOURS_PER_WEEK]),
                     CONF_WORKING_DAYS: user_input.get(CONF_WORKING_DAYS, DEFAULT_WORKING_DAYS),
                     CONF_START_DATE: user_input[CONF_START_DATE],
@@ -185,8 +201,10 @@ class ClockifyOvertimeConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     CONF_SCAN_INTERVAL: DEFAULT_SCAN_INTERVAL,
                     CONF_EXCLUDED_PROJECT_IDS: [],
                     CONF_PROJECT_SENSOR_IDS: [],
-                    CONF_ENABLE_LAST_WEEK_SENSORS: DEFAULT_ENABLE_LAST_WEEK_SENSORS,
+                                    CONF_ENABLE_LAST_WEEK_SENSORS: DEFAULT_ENABLE_LAST_WEEK_SENSORS,
                     CONF_ENABLE_THIS_WEEK_SENSORS: DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+                    CONF_ENABLE_LAST_WEEK_TARGET_SENSOR: DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                    CONF_ENABLE_THIS_WEEK_TARGET_SENSOR: DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
                 },
             ),
             errors=errors,
@@ -252,6 +270,18 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
                     DEFAULT_ENABLE_THIS_WEEK_SENSORS,
                 )
             )
+            user_input[CONF_ENABLE_LAST_WEEK_TARGET_SENSOR] = bool(
+                user_input.get(
+                    CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                    DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                )
+            )
+            user_input[CONF_ENABLE_THIS_WEEK_TARGET_SENSOR] = bool(
+                user_input.get(
+                    CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
+                    DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
+                )
+            )
             user_input[CONF_HOURS_PER_WEEK] = float(user_input[CONF_HOURS_PER_WEEK])
             user_input[CONF_CORRECTION_HOURS] = float(user_input[CONF_CORRECTION_HOURS])
             user_input[CONF_SCAN_INTERVAL] = int(user_input[CONF_SCAN_INTERVAL])
@@ -291,6 +321,18 @@ class ClockifyOvertimeOptionsFlow(config_entries.OptionsFlow):
                         current.get(
                             CONF_ENABLE_THIS_WEEK_SENSORS,
                             DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+                        )
+                    ),
+                    CONF_ENABLE_LAST_WEEK_TARGET_SENSOR: bool(
+                        current.get(
+                            CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                            DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                        )
+                    ),
+                    CONF_ENABLE_THIS_WEEK_TARGET_SENSOR: bool(
+                        current.get(
+                            CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
+                            DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
                         )
                     ),
                 },
@@ -369,6 +411,20 @@ def _build_tracking_schema(
             default=defaults.get(
                 CONF_ENABLE_THIS_WEEK_SENSORS,
                 DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+            ),
+        ): BooleanSelector(),
+        vol.Optional(
+            CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+            default=defaults.get(
+                CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+            ),
+        ): BooleanSelector(),
+        vol.Optional(
+            CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
+            default=defaults.get(
+                CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
+                DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
             ),
         ): BooleanSelector(),
     }

@@ -21,7 +21,9 @@
                     "excluded_project_ids": "Projects to exclude from billable hours",
                     "project_sensor_ids": "Projects to expose as sensors",
                     "enable_last_week_sensors": "Enable last-week sensors",
-                    "enable_this_week_sensors": "Enable this-week sensors"
+                    "enable_this_week_sensors": "Enable this-week sensors",
+                    "enable_last_week_target_sensor": "Enable last-week target sensor",
+                    "enable_this_week_target_sensor": "Enable this-week target sensor"
                 },
                 "data_description": {
                     "working_days": "Select the days of the week you are contractually required to work.",
@@ -30,7 +32,9 @@
                     "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable.",
                     "project_sensor_ids": "Each selected project gets a dedicated sensor showing total hours booked in the tracking period.",
                     "enable_last_week_sensors": "Creates two additional sensors for last calendar week: total hours and billable hours.",
-                    "enable_this_week_sensors": "Creates two additional sensors for the current calendar week: total hours and billable hours."
+                    "enable_this_week_sensors": "Creates two additional sensors for the current calendar week: total hours and billable hours.",
+                    "enable_last_week_target_sensor": "Creates an additional diagnostic sensor showing target (expected) hours for last calendar week.",
+                    "enable_this_week_target_sensor": "Creates an additional diagnostic sensor showing target (expected) hours for the current calendar week."
                 }
             }
         },
@@ -62,7 +66,9 @@
                     "excluded_project_ids": "Projects to exclude from billable hours",
                     "project_sensor_ids": "Projects to expose as sensors",
                     "enable_last_week_sensors": "Enable last-week sensors",
-                    "enable_this_week_sensors": "Enable this-week sensors"
+                    "enable_this_week_sensors": "Enable this-week sensors",
+                    "enable_last_week_target_sensor": "Enable last-week target sensor",
+                    "enable_this_week_target_sensor": "Enable this-week target sensor"
                 },
                 "data_description": {
                     "working_days": "Select the days of the week you are contractually required to work.",
@@ -71,7 +77,9 @@
                     "excluded_project_ids": "These projects are excluded from the billable hours calculation even if they are marked as billable.",
                     "project_sensor_ids": "Each selected project gets a dedicated sensor showing total hours booked in the tracking period.",
                     "enable_last_week_sensors": "Creates two additional sensors for last calendar week: total hours and billable hours.",
-                    "enable_this_week_sensors": "Creates two additional sensors for the current calendar week: total hours and billable hours."
+                    "enable_this_week_sensors": "Creates two additional sensors for the current calendar week: total hours and billable hours.",
+                    "enable_last_week_target_sensor": "Creates an additional diagnostic sensor showing target (expected) hours for last calendar week.",
+                    "enable_this_week_target_sensor": "Creates an additional diagnostic sensor showing target (expected) hours for the current calendar week."
                 }
             }
         }
@@ -104,17 +112,41 @@
     },
     "entity": {
         "sensor": {
-            "total_hours": { "name": "Total Hours" },
-            "billable_hours": { "name": "Billable Hours" },
-            "target_hours": { "name": "Target Hours" },
-            "overtime_balance": { "name": "Overtime Balance" },
-            "last_week_total_hours": { "name": "Last Week Total Hours" },
-            "last_week_billable_hours": { "name": "Last Week Billable Hours" },
-            "this_week_total_hours": { "name": "This Week Total Hours" },
-            "this_week_billable_hours": { "name": "This Week Billable Hours" }
+            "total_hours": {
+                "name": "Total Hours"
+            },
+            "billable_hours": {
+                "name": "Billable Hours"
+            },
+            "target_hours": {
+                "name": "Target Hours"
+            },
+            "overtime_balance": {
+                "name": "Overtime Balance"
+            },
+            "last_week_total_hours": {
+                "name": "Last Week Total Hours"
+            },
+            "last_week_billable_hours": {
+                "name": "Last Week Billable Hours"
+            },
+            "this_week_total_hours": {
+                "name": "This Week Total Hours"
+            },
+            "this_week_billable_hours": {
+                "name": "This Week Billable Hours"
+            },
+            "last_week_target_hours": {
+                "name": "Last Week Target Hours"
+            },
+            "this_week_target_hours": {
+                "name": "This Week Target Hours"
+            }
         },
         "number": {
-            "correction_hours": { "name": "Correction Hours" }
+            "correction_hours": {
+                "name": "Correction Hours"
+            }
         }
     }
 }

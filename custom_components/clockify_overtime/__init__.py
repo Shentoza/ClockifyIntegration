@@ -20,6 +20,8 @@ from .const import (
     CONF_CORRECTION_HOURS,
     CONF_ENABLE_LAST_WEEK_SENSORS,
     CONF_ENABLE_THIS_WEEK_SENSORS,
+    CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+    CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
     CONF_EXCLUDED_PROJECT_IDS,
     CONF_HOURS_PER_WEEK,
     CONF_PROJECT_SENSOR_IDS,
@@ -30,6 +32,8 @@ from .const import (
     DEFAULT_CORRECTION_HOURS,
     DEFAULT_ENABLE_LAST_WEEK_SENSORS,
     DEFAULT_ENABLE_THIS_WEEK_SENSORS,
+    DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+    DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
     DEFAULT_HOURS_PER_WEEK,
     DEFAULT_SCAN_INTERVAL,
     DEFAULT_TRACKING_MODE,
@@ -41,6 +45,7 @@ from .const import (
 from .calculations import (
     calculate_period_hours,
     calculate_target_hours,
+    calculate_time_off_days,
     entry_duration_seconds,
     extract_holiday_dates,
     split_time_off_days,
@@ -245,6 +250,20 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
                 DEFAULT_ENABLE_THIS_WEEK_SENSORS,
             )
         )
+        enable_last_week_target_sensor: bool = bool(
+            _opt(
+                self.entry,
+                CONF_ENABLE_LAST_WEEK_TARGET_SENSOR,
+                DEFAULT_ENABLE_LAST_WEEK_TARGET_SENSOR,
+            )
+        )
+        enable_this_week_target_sensor: bool = bool(
+            _opt(
+                self.entry,
+                CONF_ENABLE_THIS_WEEK_TARGET_SENSOR,
+                DEFAULT_ENABLE_THIS_WEEK_TARGET_SENSOR,
+            )
+        )
         correction_hours: float = float(
             _opt(self.entry, CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
         )
@@ -329,6 +348,9 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
 
         this_week_start = today - timedelta(days=today.weekday())
         this_week_end = this_week_start + timedelta(days=6)
+        last_week_start = this_week_start - timedelta(days=7)
+        last_week_end = this_week_start - timedelta(days=1)
+
         if enable_this_week_sensors:
             this_week_total_hours, this_week_billable_hours = calculate_period_hours(
                 entries,
@@ -338,8 +360,6 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             )
 
         if enable_last_week_sensors:
-            last_week_start = this_week_start - timedelta(days=7)
-            last_week_end = this_week_start - timedelta(days=1)
             last_week_total_hours, last_week_billable_hours = calculate_period_hours(
                 entries,
                 period_start=last_week_start,
@@ -370,6 +390,50 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             current_date=today,
         )
 
+        # 7b. Compute optional weekly target aggregates
+        tz_name = str(self.hass.config.time_zone) if self.hass.config.time_zone else None
+        this_week_target_hours = 0.0
+        last_week_target_hours = 0.0
+
+        if enable_this_week_target_sensor:
+            this_week_past_time_off = calculate_time_off_days(
+                time_off_requests,
+                working_days,
+                holiday_dates,
+                period_start=this_week_start,
+                period_end=today - timedelta(days=1),
+                timezone_name=tz_name,
+            )
+            this_week_target_hours = calculate_target_hours(
+                this_week_start,
+                today,
+                hours_per_week,
+                working_days,
+                holiday_dates,
+                time_off_days=this_week_past_time_off,
+                today_actual_hours=today_relevant_h,
+                today_time_off_days=today_time_off,
+                current_date=today,
+            )
+
+        if enable_last_week_target_sensor:
+            last_week_time_off = calculate_time_off_days(
+                time_off_requests,
+                working_days,
+                holiday_dates,
+                period_start=last_week_start,
+                period_end=last_week_end,
+                timezone_name=tz_name,
+            )
+            last_week_target_hours = calculate_target_hours(
+                last_week_start,
+                last_week_end,
+                hours_per_week,
+                working_days,
+                holiday_dates,
+                time_off_days=last_week_time_off,
+            )
+
         # 8. Compute balance
         # Base = billable hours when in billable mode, otherwise all actual hours
         base_hours = billable_hours if tracking_mode == TRACKING_MODE_BILLABLE else actual_hours
@@ -395,6 +459,8 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             "this_week_billable_hours": this_week_billable_hours,
             "last_week_total_hours": last_week_total_hours,
             "last_week_billable_hours": last_week_billable_hours,
+            "this_week_target_hours": this_week_target_hours,
+            "last_week_target_hours": last_week_target_hours,
         }
 
 
