@@ -22,6 +22,7 @@ WEEK_THU = date(2025, 1, 9)   # Thursday
 WEEK_FRI = date(2025, 1, 10)  # Friday
 WEEK_SAT = date(2025, 1, 11)  # Saturday
 WEEK_SUN = date(2025, 1, 12)  # Sunday
+WEEK_MON_NEXT = date(2025, 1, 13)  # Following Monday
 
 
 def test_calculate_target_hours_basic():
@@ -102,6 +103,7 @@ def test_progressive_today_no_hours_tracked():
     result = calculate_target_hours(
         WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
         today_actual_hours=0.0,
+            current_date=WEEK_FRI,
     )
     assert result == 32.0  # Mon-Thu only; Fri contributes 0
 
@@ -114,6 +116,7 @@ def test_progressive_today_partial_hours():
     result = calculate_target_hours(
         WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
         today_actual_hours=5.0,
+            current_date=WEEK_FRI,
     )
     assert result == 37.0  # 32 h (Mon-Thu) + 5 h (today so far)
 
@@ -125,6 +128,7 @@ def test_progressive_today_exactly_full_hours():
     result = calculate_target_hours(
         WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
         today_actual_hours=8.0,
+            current_date=WEEK_FRI,
     )
     assert result == 40.0  # 32 h + 8 h = full week target
 
@@ -136,6 +140,7 @@ def test_progressive_today_overtime():
     result = calculate_target_hours(
         WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
         today_actual_hours=9.0,
+            current_date=WEEK_FRI,
     )
     assert result == 40.0  # cap at 8 h; the extra 1 h shows as overtime
 
@@ -152,6 +157,7 @@ def test_progressive_today_half_day_timeoff_cap():
         time_off_days=0.0,  # today's time-off already excluded from global
         today_actual_hours=5.0,
         today_time_off_days=0.5,
+            current_date=WEEK_FRI,
     )
     assert result == 36.0  # 32 h (Mon-Thu) + 4 h (today capped at half-day)
 
@@ -163,6 +169,7 @@ def test_progressive_today_no_contribution_on_holiday():
     result = calculate_target_hours(
         WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, {WEEK_FRI},
         today_actual_hours=8.0,
+        current_date=WEEK_FRI,
     )
     assert result == 32.0  # Fri is holiday; even 8 h tracked adds nothing
 
@@ -178,5 +185,106 @@ def test_progressive_today_three_days_19h_on_32h_week_is_19_2_target():
         WORKDAYS_MON_FRI,
         set(),
         today_actual_hours=19.0,
+        current_date=WEEK_WED,
     )
     assert result == 19.2
+
+
+def test_progressive_today_disabled_when_today_is_complete():
+    # SPEC: When current_date does not match end (yesterday's data),
+    # progressive tracking is disabled. The day is treated as a full working day
+    # regardless of hours_actually tracked. This prevents drift when querying
+    # historical data.
+    result = calculate_target_hours(
+        WEEK_MON,
+        WEEK_FRI,
+        40.0,
+        WORKDAYS_MON_FRI,
+        set(),
+        today_actual_hours=3.0,  # Only 3 hours tracked, but ignored
+        current_date=WEEK_SAT,  # Different date, so Fri is not "today"
+    )
+    # Should be 40.0 (5 full days), not 35.0 (4 + 3 capped at 8)
+    assert result == 40.0
+
+
+def test_progressive_today_vs_complete_comparison():
+    # SPEC: When current_date matches end (today's data), partial hours reduce
+    # the target (progressive). When current_date differs (historical data),
+    # all days are full. This ensures no drift after the calendar date changes.
+    progressive_result = calculate_target_hours(
+        WEEK_MON,
+        WEEK_FRI,
+        40.0,
+        WORKDAYS_MON_FRI,
+        set(),
+        today_actual_hours=5.0,
+        current_date=WEEK_FRI,  # End matches today → progressive
+    )
+    complete_result = calculate_target_hours(
+        WEEK_MON,
+        WEEK_FRI,
+        40.0,
+        WORKDAYS_MON_FRI,
+        set(),
+        today_actual_hours=5.0,
+        current_date=WEEK_SAT,  # End != today → full days
+    )
+    # Progressive: 32 (Mon-Thu) + 5 (today, capped) = 37
+    # Complete: 40 (all 5 days full)
+    assert progressive_result == 37.0
+    assert complete_result == 40.0
+
+
+def test_previous_day_never_progressive_after_midnight():
+    # SPEC: On a multi-day period ending today (e.g. Mon-Fri where Fri is today),
+    # only today (Fri) can be progressive. All prior days (Mon-Thu) are always
+    # counted as full days. When the calendar date changes, the logic
+    # automatically switches because current_date no longer matches end.
+    # This ensures that yesterday's balance does not change on a new day.
+    #
+    # Scenario: Friday (WEEK_FRI) is today with 5 hours tracked.
+    # Yesterday (WEEK_THU) already completed. Even at 2:00 AM on Friday,
+    # Thursday should still be 8h (not progressive).
+    result = calculate_target_hours(
+        start=WEEK_MON,
+        end=WEEK_FRI,
+        hours_per_week=40.0,
+        working_days=WORKDAYS_MON_FRI,
+        holiday_dates=set(),
+        today_actual_hours=5.0,
+        current_date=WEEK_FRI,  # Today is Friday
+    )
+    # Mon-Thu: 4 days × 8h = 32h (always full, never progressive)
+    # Fri (today): 5h tracked < 8h, so caps at 5h (progressive because today)
+    # Total: 32 + 5 = 37h
+    assert result == 37.0
+
+
+def test_yesterday_resets_when_new_day_starts():
+    # SPEC: When the calendar date changes (e.g. Friday evening to Saturday),
+    # the previous day is "locked in" as a full day. This happens automatically
+    # because current_date changes from WEEK_FRI to WEEK_SAT.
+    # Friday transitions from progressive to fixed when date rolls over.
+    
+    # Friday at 21:00 (before cutoff): today_is_complete=False
+    # Actually: Friday with current_date=Friday (same day)
+    friday_before_cutoff = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
+        today_actual_hours=5.0,  # 5h tracked
+        current_date=WEEK_FRI,  # Friday is today
+    )
+    # Mon-Thu: 32h (full), Fri: 5h (progressive, capped at 5h) = 37h
+    assert friday_before_cutoff == 37.0
+    
+    # Saturday morning: current_date=Saturday (next day)
+    # Friday is now in the past → full day
+    friday_after_cutoff = calculate_target_hours(
+        WEEK_MON, WEEK_FRI, 40.0, WORKDAYS_MON_FRI, set(),
+        today_actual_hours=5.0,  # 5h tracked (ignored, day is complete)
+        current_date=WEEK_SAT,  # But today is Saturday
+    )
+    # Mon-Fri: all full days = 40h
+    # Friday transitions from 5h (progressive) to 8h (full) when cutoff is reached
+    assert friday_after_cutoff == 40.0
+

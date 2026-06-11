@@ -286,6 +286,7 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             holiday_dates,
             period_start=start_date,
             today=today,
+            timezone_name=str(self.hass.config.time_zone) if self.hass.config.time_zone else None,
         )
 
         # 6. Compute hours
@@ -348,13 +349,15 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
 
         # 7. Compute target (Soll-Stunden) minus time-off days
         # Today's hours (total or billable depending on mode) drive the
-        # progressive cap so the balance never drops at midnight.
+        # progressive cap. Progressive tracking automatically disables when
+        # the calendar date changes (date rollover).
         today_total_h, today_billable_h = calculate_period_hours(
             entries, today, today, excluded_ids,
         )
         today_relevant_h = (
             today_billable_h if tracking_mode == TRACKING_MODE_BILLABLE else today_total_h
         )
+
         target_hours = calculate_target_hours(
             start_date,
             today,
@@ -364,6 +367,7 @@ class ClockifyOvertimeCoordinator(DataUpdateCoordinator):
             time_off_days=past_time_off_days,
             today_actual_hours=today_relevant_h,
             today_time_off_days=today_time_off,
+            current_date=today,
         )
 
         # 8. Compute balance

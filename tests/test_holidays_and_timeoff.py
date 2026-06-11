@@ -14,6 +14,7 @@ from custom_components.clockify_overtime.calculations import (
     calculate_time_off_days,
     extract_holiday_dates,
     split_time_off_days,
+    _iso_to_local_date,
 )
 
 WORKDAYS_MON_FRI = ["MONDAY", "TUESDAY", "WEDNESDAY", "THURSDAY", "FRIDAY"]
@@ -201,4 +202,49 @@ def test_split_time_off_days_today_is_period_start():
     assert past_days == 0.0
     assert today_days == 1.0
     assert total_days == 1.0
+
+
+def test_calculate_time_off_days_plain_date_strings():
+    # SPEC: When time-off requests use plain date strings (ISO format without
+    # time component), they must be parsed correctly without timezone handling.
+    # This is the baseline case that must work everywhere.
+    requests = [_request("2026-06-08", "2026-06-08", half_day=False)]
+    assert calculate_time_off_days(
+        requests, WORKDAYS_MON_FRI, set()
+    ) == 1.0
+
+
+def test_calculate_time_off_days_utc_datetime_without_timezone_param():
+    # SPEC: When Clockify sends a UTC datetime string without a configured
+    # timezone_name in the integration, the UTC date is used directly.
+    # This matches the default behavior (timezone_name=None).
+    requests = [
+        _request("2026-06-08T22:00:00Z", "2026-06-09T21:59:59Z", half_day=False)
+    ]
+    # UTC interpretation: 22:00 UTC June 8 to 21:59 UTC June 9 spans both dates
+    assert (
+        calculate_time_off_days(requests, WORKDAYS_MON_FRI, set(), timezone_name=None)
+        == 2.0
+    )
+
+
+def test_iso_to_local_date_plain_date_string():
+    # SPEC: Plain date strings (no time component) must be parsed correctly
+    # regardless of timezone_name setting (timezone is ignored for dates).
+    assert _iso_to_local_date("2026-06-08", None) == date(2026, 6, 8)
+    assert _iso_to_local_date("2026-06-08", "UTC") == date(2026, 6, 8)
+
+
+def test_iso_to_local_date_utc_datetime_no_timezone():
+    # SPEC: UTC datetime strings without a timezone_name are converted using UTC.
+    # 22:00 UTC on June 8 is still June 8 in UTC.
+    assert _iso_to_local_date("2026-06-08T22:00:00Z", None) == date(2026, 6, 8)
+
+
+def test_iso_to_local_date_utc_datetime_with_utc_timezone():
+    # SPEC: Explicitly passing timezone_name="UTC" produces the same result as
+    # timezone_name=None (both use UTC), ensuring consistent behavior.
+    assert (
+        _iso_to_local_date("2026-06-08T22:00:00Z", "UTC") == date(2026, 6, 8)
+    )
 
