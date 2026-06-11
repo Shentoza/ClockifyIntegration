@@ -165,3 +165,18 @@ def test_progressive_today_no_contribution_on_holiday():
         today_actual_hours=8.0,
     )
     assert result == 32.0  # Fri is holiday; even 8 h tracked adds nothing
+
+
+def test_progressive_today_three_days_19h_on_32h_week_is_19_2_target():
+    # SPEC: On a 32 h / 5-day contract (6.4 h/day), after three working days
+    # with 19 h tracked in total, the expected target is 19.2 h (3 x 6.4).
+    # Any notable overtime jump beyond rounding indicates assembly drift.
+    result = calculate_target_hours(
+        WEEK_MON,
+        WEEK_WED,
+        32.0,
+        WORKDAYS_MON_FRI,
+        set(),
+        today_actual_hours=19.0,
+    )
+    assert result == 19.2
