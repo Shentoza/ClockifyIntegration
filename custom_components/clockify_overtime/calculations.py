@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, timezone
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from .const import WEEKDAY_MAP
 
@@ -26,6 +27,7 @@ def calculate_target_hours(
     time_off_days: float = 0.0,
     today_actual_hours: float | None = None,
     today_time_off_days: float = 0.0,
+    current_date: date | None = None,
 ) -> float:
     """Return expected (target) hours from *start* to *end* inclusive.
 
@@ -44,15 +46,25 @@ def calculate_target_hours(
     Must NOT include any time-off that falls on *end* when *today_actual_hours*
     is provided, because today's time-off is handled via *today_time_off_days*.
 
-    *today_actual_hours* enables progressive tracking for the current (last)
-    day: instead of immediately adding the full *hours_per_day* at midnight,
+    *today_actual_hours* enables progressive tracking for the last day of the
+    period (*end*) only when it matches *current_date* (today's calendar date).
+    Instead of immediately adding the full *hours_per_day* at midnight,
     today's contribution scales with the hours actually tracked so far, capped
     at the effective daily requirement.  Pass the hours that match the active
     tracking mode (total or billable).
 
+    When the date changes (e.g. from Friday to Saturday), *end* no longer matches
+    *current_date*, so the previous day automatically becomes a fixed full day.
+
     *today_time_off_days* is the time-off fraction consumed on *end* today
     (0.0 = none, 0.5 = half-day, 1.0 = full day).  It reduces today's cap so
     a half-day off still generates overtime once the remaining half is exceeded.
+
+    *current_date* (default None) is today's calendar date.  If provided and
+    equals *end*, progressive tracking is enabled for that day. Otherwise,
+    all days are counted as full working days.
+    Use this to automatically disable progressive tracking after midnight
+    without needing an explicit cutoff-hour setting.
     """
     work_day_numbers = {WEEKDAY_MAP[d] for d in working_days if d in WEEKDAY_MAP}
     num_work_days_per_week = len(work_day_numbers) or 5  # safety: avoid zero division
@@ -61,12 +73,13 @@ def calculate_target_hours(
     current = start
     while current <= end:
         if current.weekday() in work_day_numbers and current not in holiday_dates:
-            if today_actual_hours is not None and current == end:
-                # Progressive today: target grows with tracked hours, never
-                # adding more than the effective daily requirement.
+            # Progressive only if: end is today AND current_date matches end AND hours provided
+            if current == end and current == current_date and today_actual_hours is not None:
+                # Progressive: target grows with tracked hours, capped at daily requirement
                 today_cap = max(0.0, hours_per_day * (1.0 - today_time_off_days))
                 total_hours += min(today_actual_hours, today_cap)
             else:
+                # Full day: all other dates (past or future)
                 total_hours += hours_per_day
         current += timedelta(days=1)
     return round(total_hours - time_off_days * hours_per_day, 2)
@@ -109,6 +122,7 @@ def calculate_time_off_days(
     holiday_dates: set[date],
     period_start: date | None = None,
     period_end: date | None = None,
+    timezone_name: str | None = None,
 ) -> float:
     """Return total working days consumed by APPROVED time-off requests.
 
@@ -129,9 +143,9 @@ def calculate_time_off_days(
         start_str = period.get("start")
         if not start_str:
             continue
-        start = date.fromisoformat(start_str[:10])
+        start = _iso_to_local_date(start_str, timezone_name)
         end_str = period.get("end")
-        end = date.fromisoformat(end_str[:10]) if end_str else start
+        end = _iso_to_local_date(end_str, timezone_name) if end_str else start
         is_half_day = time_off_period.get("halfDay", False)
 
         # Clamp to the tracking period so pre-period days are not counted
@@ -158,6 +172,7 @@ def split_time_off_days(
     holiday_dates: set[date],
     period_start: date,
     today: date,
+    timezone_name: str | None = None,
 ) -> tuple[float, float, float]:
     """Split approved time-off into past days, today, and total.
 
@@ -175,6 +190,7 @@ def split_time_off_days(
         holiday_dates,
         period_start=period_start,
         period_end=today,
+        timezone_name=timezone_name,
     )
     today_days = calculate_time_off_days(
         requests,
@@ -182,6 +198,7 @@ def split_time_off_days(
         holiday_dates,
         period_start=today,
         period_end=today,
+        timezone_name=timezone_name,
     )
 
     if today <= period_start:
@@ -193,9 +210,30 @@ def split_time_off_days(
             holiday_dates,
             period_start=period_start,
             period_end=today - timedelta(days=1),
+            timezone_name=timezone_name,
         )
 
     return round(past_days, 2), round(today_days, 2), round(total_days, 2)
+
+
+def _iso_to_local_date(value: str, timezone_name: str | None) -> date:
+    """Convert an ISO date/datetime string into a local calendar date.
+
+    Clockify time-off periods can come as UTC datetimes. Converting to the
+    Home Assistant timezone avoids day-shift errors around midnight.
+    If *timezone_name* is None or fails to resolve, UTC is used.
+    """
+    if "T" not in value:
+        return date.fromisoformat(value[:10])
+
+    dt = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    if timezone_name and dt.tzinfo is not None:
+        try:
+            dt = dt.astimezone(ZoneInfo(timezone_name))
+        except Exception:
+            # Keep UTC date if timezone lookup fails unexpectedly.
+            pass
+    return dt.date()
 
 
 # ---------------------------------------------------------------------------
