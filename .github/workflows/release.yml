@@ -59,6 +59,12 @@ jobs:
           esac
           echo "version=$MAJOR.$MINOR.$PATCH" >> "$GITHUB_OUTPUT"
 
+      - name: Sync [Unreleased] block from merged PR body
+        if: github.event_name != 'workflow_dispatch'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: python3 .github/scripts/sync_changelog.py
+
       - name: Append PR reference to changelog items
         if: github.event_name != 'workflow_dispatch'
         run: |
