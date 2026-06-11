@@ -101,5 +101,20 @@
         }
       }
     }
+  },
+  "entity": {
+    "sensor": {
+      "total_hours": { "name": "Total Hours" },
+      "billable_hours": { "name": "Billable Hours" },
+      "target_hours": { "name": "Target Hours" },
+      "overtime_balance": { "name": "Overtime Balance" },
+      "last_week_total_hours": { "name": "Last Week Total Hours" },
+      "last_week_billable_hours": { "name": "Last Week Billable Hours" },
+      "this_week_total_hours": { "name": "This Week Total Hours" },
+      "this_week_billable_hours": { "name": "This Week Billable Hours" }
+    },
+    "number": {
+      "correction_hours": { "name": "Correction Hours" }
+    }
   }
 }

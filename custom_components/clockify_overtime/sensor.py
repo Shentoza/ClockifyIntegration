@@ -12,9 +12,11 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from . import ClockifyOvertimeCoordinator
 from .const import (
+    CONF_CORRECTION_HOURS,
     CONF_ENABLE_LAST_WEEK_SENSORS,
     CONF_ENABLE_THIS_WEEK_SENSORS,
     CONF_PROJECT_SENSOR_IDS,
+    DEFAULT_CORRECTION_HOURS,
     DOMAIN,
 )
 
@@ -97,11 +99,13 @@ class _ClockifyBaseSensor(CoordinatorEntity[ClockifyOvertimeCoordinator], Sensor
         entry: ConfigEntry,
         user_name: str,
         data_key: str,
-        label: str,
+        label: str | None = None,
     ) -> None:
         super().__init__(coordinator)
+        self._entry = entry
         self._data_key = data_key
-        self._attr_name = label
+        if label is not None:
+            self._attr_name = label
         self._attr_unique_id = f"clockify_overtime_{entry.entry_id}_{data_key}"
         # Group all sensors under one logical device per user
         self._attr_device_info = {
@@ -138,20 +142,20 @@ class ClockifyActualHoursSensor(_ClockifyBaseSensor):
     """Total hours worked (all REGULAR entries, excluding BREAKs)."""
 
     _attr_icon = "mdi:clock-check-outline"
+    _attr_translation_key = "total_hours"
 
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(coordinator, entry, user_name, "total_hours", "Total Hours")
+        super().__init__(coordinator, entry, user_name, "total_hours")
 
 
 class ClockifyBillableHoursSensor(_ClockifyBaseSensor):
     """Billable / project hours only (excludes non-billable and excluded projects)."""
 
     _attr_icon = "mdi:briefcase-clock-outline"
+    _attr_translation_key = "billable_hours"
 
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(
-            coordinator, entry, user_name, "billable_hours", "Billable Hours"
-        )
+        super().__init__(coordinator, entry, user_name, "billable_hours")
 
 
 class ClockifyTargetHoursSensor(_ClockifyBaseSensor):
@@ -159,9 +163,10 @@ class ClockifyTargetHoursSensor(_ClockifyBaseSensor):
 
     _attr_icon = "mdi:calendar-clock-outline"
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_translation_key = "target_hours"
 
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(coordinator, entry, user_name, "target_hours", "Target Hours")
+        super().__init__(coordinator, entry, user_name, "target_hours")
 
 
 class ClockifyOvertimeBalanceSensor(_ClockifyBaseSensor):
@@ -174,21 +179,26 @@ class ClockifyOvertimeBalanceSensor(_ClockifyBaseSensor):
     _attr_icon = "mdi:clock-plus-outline"
     _attr_state_class = SensorStateClass.MEASUREMENT  # allows negative values
 
+    _attr_translation_key = "overtime_balance"
+
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(
-            coordinator, entry, user_name, "balance_hours", "Overtime Balance"
-        )
+        super().__init__(coordinator, entry, user_name, "balance_hours")
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         attrs = super().extra_state_attributes
         if self.coordinator.data:
+            # Read correction_hours from config entry instead of coordinator.data
+            # because it's user input, not a computed result
+            correction_hours = float(
+                self._entry.options.get(CONF_CORRECTION_HOURS, DEFAULT_CORRECTION_HOURS)
+            )
             attrs.update(
                 {
                     "total_hours": self.coordinator.data.get("total_hours"),
                     "billable_hours": self.coordinator.data.get("billable_hours"),
                     "target_hours": self.coordinator.data.get("target_hours"),
-                    "correction_hours": self.coordinator.data.get("correction_hours"),
+                    "correction_hours": correction_hours,
                     "time_off_days": self.coordinator.data.get("time_off_days"),
                 }
             )
@@ -222,57 +232,37 @@ class ClockifyLastWeekTotalHoursSensor(_ClockifyBaseSensor):
     """Total booked hours in the previous calendar week (Mon-Sun)."""
 
     _attr_icon = "mdi:calendar-arrow-left"
+    _attr_translation_key = "last_week_total_hours"
 
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(
-            coordinator,
-            entry,
-            user_name,
-            "last_week_total_hours",
-            "Last Week Total Hours",
-        )
+        super().__init__(coordinator, entry, user_name, "last_week_total_hours")
 
 
 class ClockifyLastWeekBillableHoursSensor(_ClockifyBaseSensor):
     """Billable hours in the previous calendar week (Mon-Sun)."""
 
     _attr_icon = "mdi:calendar-arrow-left"
+    _attr_translation_key = "last_week_billable_hours"
 
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(
-            coordinator,
-            entry,
-            user_name,
-            "last_week_billable_hours",
-            "Last Week Billable Hours",
-        )
+        super().__init__(coordinator, entry, user_name, "last_week_billable_hours")
 
 
 class ClockifyThisWeekTotalHoursSensor(_ClockifyBaseSensor):
     """Total booked hours in the current calendar week (Mon-Sun)."""
 
     _attr_icon = "mdi:calendar-arrow-right"
+    _attr_translation_key = "this_week_total_hours"
 
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(
-            coordinator,
-            entry,
-            user_name,
-            "this_week_total_hours",
-            "This Week Total Hours",
-        )
+        super().__init__(coordinator, entry, user_name, "this_week_total_hours")
 
 
 class ClockifyThisWeekBillableHoursSensor(_ClockifyBaseSensor):
     """Billable hours in the current calendar week (Mon-Sun)."""
 
     _attr_icon = "mdi:calendar-arrow-right"
+    _attr_translation_key = "this_week_billable_hours"
 
     def __init__(self, coordinator, entry, user_name) -> None:
-        super().__init__(
-            coordinator,
-            entry,
-            user_name,
-            "this_week_billable_hours",
-            "This Week Billable Hours",
-        )
+        super().__init__(coordinator, entry, user_name, "this_week_billable_hours")
